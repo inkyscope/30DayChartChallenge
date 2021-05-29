@@ -1,0 +1,113 @@
+---
+title: "day24_monochrome"
+author: "Sung Inkyung"
+date: '2021 5 29 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(tuneR)
+library(cowplot)
+```
+
+
+```{r}
+vivaldi_sp1 <- readMidi("C:/Users/inkyscope/Documents/projectR/PLFF/data/spring_no1_allegro_gp.mid")
+
+vivaldi_au1 <- readMidi("C:/Users/inkyscope/Documents/projectR/PLFF/data/autumn_no1_allegro_gp.mid")
+```
+
+
+```{r}
+df_spring <- vivaldi_sp1 %>%
+  filter(event == "Note On") %>% 
+  ggplot() +
+  geom_point(aes(x = time, y = parameter1,
+                 alpha = parameter2),
+             show.legend = F) +
+  facet_wrap(~track, nrow = 4) +
+  theme_void() +
+  theme(aspect.ratio = 4/20)
+
+
+```
+
+```{r}
+df_spring <- vivaldi_sp1 %>%
+  filter(event == "Note On") %>% 
+  mutate(quantized_time = round(time / 10) * 10,
+         concerto = "Spring (Allegro)")
+
+df_autumn<- vivaldi_au1 %>% 
+  filter(event == "Note On") %>% 
+  mutate(quantized_time = round(time / 10) * 10,
+         concerto = "Autumn (Allegro)")
+
+
+vivaldi <- df_spring %>% 
+  bind_rows(df_autumn) 
+```
+
+
+```{r}
+plot_spring <- vivaldi %>% 
+  filter(concerto == "Spring (Allegro)") %>% 
+  ggplot() +
+  geom_point(aes(x = quantized_time, y = parameter1,
+                 alpha = parameter2/5),
+             show.legend = F) +
+  theme_void() +
+  theme(aspect.ratio = 4/20)
+
+
+
+plot_autumn <- vivaldi %>% 
+  filter(concerto == "Autumn (Allegro)") %>% 
+  ggplot() +
+  geom_point(aes(x = quantized_time, y = parameter1,
+                 alpha = parameter2/5),
+             show.legend = F) +
+  theme_void() +
+  theme(aspect.ratio = 4/20)
+
+```
+
+
+```{r}
+spring_title <- ggdraw() +
+  draw_label("S P R I N G\nallegro",,
+             hjust = .5, 
+             size = 20)
+
+autumn_title <- ggdraw() +
+  draw_label("A U T U M N\nallegro",
+             hjust = .5, 
+             size = 20)
+
+signature <- ggdraw() + 
+  draw_image("C:/Users/inkyscope/Documents/projectR/30DayChartChallenge/day24/data/VivaldiSignature.png", scale = .7) 
+
+caption <- ggdraw() +
+  draw_label("Source: #30DayChartChallenge | Graphic: Sung Inkyung",
+             hjust = 0.5, size = 10)
+
+## Assemble and export ----
+plot_grid(NULL, 
+          signature,
+          spring_title,
+          plot_spring,
+          autumn_title,
+          plot_autumn,
+          caption,
+          ncol = 1,
+          rel_heights = c(0.05, 0.15, 0.08, 0.3, 0.08, 0.3, 0.05))
+
+ggsave(here("day24", "day24_monochrome.png"), dpi = 400,
+       width = 20, height = 26, units = "cm")
+```
+

@@ -1,0 +1,95 @@
+---
+title: "day2 Pictogram"
+author: "Sung Inkyung"
+date: '2021 5 30'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+### Image Source[tidytuesday by gkaramanis] (https://github.com/gkaramanis/tidytuesday/blob/master/week-21/waste.R)
+```{r}
+library(tidyverse)
+library(ggtext)
+library(tidytext)
+library(ggimage)
+library(here)
+```
+
+
+```{r}
+plastics <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-01-26/plastics.csv')
+```
+
+
+```{r}
+
+df <- plastics %>% 
+  filter(!parent_company %in% c("Grand Total", "Unbranded", "null", "NULL", "Assorted")) %>% 
+  group_by(parent_company) %>% 
+  summarize(across(empty:grand_total, ~sum(.x, na.rm = TRUE))) %>% 
+  arrange(desc(grand_total)) %>% 
+  pivot_longer(empty:grand_total,
+               names_to = "type") %>%  
+  filter(type == "grand_total") %>% 
+  slice_max(n = 20, order_by = value) %>% 
+  ungroup() %>% 
+  mutate(parent_company = fct_reorder(parent_company, value)) %>% 
+  mutate(plastic = sample(c("https://cdn1.iconfinder.com/data/icons/fitness-icon-collection/100/plastic-128.png",
+                            "https://image.flaticon.com/icons/png/128/81/81940.png",
+                            "https://image.flaticon.com/icons/png/128/1758/1758890.png",
+                            "https://image.flaticon.com/icons/png/128/85/85051.png",
+                            "https://image.flaticon.com/icons/png/128/1718/1718442.png",
+                            "https://image.flaticon.com/icons/png/128/960/960773.png"),
+                          size =  nrow(.), replace = TRUE),
+                          angle = runif(nrow(.), 0, 360))
+
+```
+
+
+```{r}
+plot <- df %>% 
+  ggplot(aes(x = value,
+             y = parent_company),
+         angle = angle) +
+  geom_image(aes(image = plastic), color = "steelblue", 
+             size = .04) +
+  scale_x_continuous(limits = c(0, 30000),
+                     breaks = seq(0, 30000, 5000),
+                     expand = c(0, 0)) +
+  labs(title = "Plastic Types by Comapnies With Most Collected in 2019-2020",
+       subtitle = "Illustrated below that amount of plastics along with top 6 companies collected by voluteers around world<br>in the **Break Free from Plastic** events in 2019-2020",
+       caption = "Source:Break Free from Plastic | Graphic: Sung Inkyung") +
+  theme_minimal() +
+  theme(legend.position = "none",
+        plot.background = element_rect(fill = "#eceef7", 
+                                       colour = "#eceef7"),
+        plot.title = element_text(size = 18,
+                                  margin = margin(b = 5)),
+        plot.subtitle = element_markdown(size = 12,
+                                         margin = margin(b = 15)),
+        plot.caption = element_text(size = 9,
+                                    color = "gray45",
+                                    margin = margin(t = 20)),
+        panel.grid = element_blank(),
+        text = element_text(size = 11),
+        axis.line.x = element_line(size = 0.5, 
+                                   color = "#101012"),
+        axis.ticks.x = element_line(color = "#101012", 
+                                    size = 0.3),
+        axis.text.y = element_text(hjust = 1),
+        
+        
+        panel.grid.major.x = element_line(color = "gray85", 
+                                          size = 0.3),
+        axis.title = element_blank(),
+        
+        plot.margin = unit(c(1, 1, 1, 0.6), "cm"))
+
+ggsave(here::here("day2", "day2_pictogram.png"),
+       dpi = 300, width = 28, height = 24, units = "cm")
+
+```
+
+

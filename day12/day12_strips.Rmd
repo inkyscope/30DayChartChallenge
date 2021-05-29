@@ -43,17 +43,18 @@ df_plastic <- summary_data %>%
   mutate(parent_company = case_when(parent_company == "Pepsico" ~ "PepsiCo",
                                     parent_company == "Universal Robina Corporation" ~ "Universal\nRobina",
                                     parent_company == "Colgate-Palmolive" ~ "Colgate-\nPalmolive",
+                                    parent_company == "Pure Water, Inc." ~ "Pure\nWater.\nInc.",
                                     TRUE ~ parent_company)) %>% 
   filter(type != "grand_total" & type != "empty") %>% 
   filter(parent_company %in% c(
                               'The Coca-Cola Company',
                               'La Doo',
-                              'Universal Robina',
+                              'Universal\nRobina',
                               'Nestlé',
                               'Unilever',
-                              'Colgate-Palmolive',
+                              'Colgate-\nPalmolive',
                               "Barna",
-                              "Pure Water, Inc.",
+                              "Pure\nWater.\nInc.",
                               "PepsiCo"
                               )) %>%
   mutate(type = str_to_upper(type))
@@ -74,7 +75,7 @@ plot <- df_plastic %>%
                color = "white") +
   geom_text(stat = "stratum",
             aes(label = fct_reorder(parent_company, value)),
-            size = 5.5,
+            size = 4.5,
             fontface = "bold",
             nudge_x = .01) +
   scale_fill_manual(values = as.vector(cols25(9)),

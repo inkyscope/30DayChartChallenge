@@ -1,0 +1,61 @@
+---
+title: "Day1_Part to Whole"
+author: "Sung Inkyung"
+date: '2021 5 29'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+### Source[30DCC by tessaeagle] (https://github.com/tessaeagle/30daychartchallenge/blob/main/Code/Day_1.R)
+```{r}
+library(tidyverse)
+library(lubridate)
+```
+
+
+```{r}
+df <- tibble(date = seq(mdy("06/01/2021"),
+                        mdy("06/30/2021"),
+                        "days"))
+
+df_june <- df %>% 
+  mutate(weekday = wday(date, label = T, 
+                        week_start = 7),
+         month = month(date, label = T),
+         date1 = yday(date),
+         week = epiweek(date)) %>% 
+  mutate(group = case_when(date == "2021-06-01" ~ "0",
+                           date > "2021-06-01" ~ "1"),
+          group = as.factor(group))
+
+
+
+plot <- df_june %>% 
+  ggplot(aes(weekday, -week, fill = group)) +
+  geom_tile(color = "white",
+            size = .3, 
+            show.legend = F) +
+  scale_fill_manual(values = c("#fcba03", "#d4d5cd")) +
+  labs(title = "30 Day Chart Challenge",
+       subtitle = "June 2021",
+       caption = "Graphic: Sung Inkyung") +
+  theme_void() +
+  theme(axis.text.x.bottom = element_text(size = 11,
+                                          color = "#314757",),
+        plot.title = element_text(size = 20,
+                                  color = "#314757",
+                                  face = "bold",
+                                  hjust = .5),
+        plot.subtitle = element_text(size = 16,
+                                     color = "#314757",
+                                     hjust = .5,
+                                     margin = margin(t = .05)),
+        plot.caption = element_text(size = 9,
+                                    color = "#b1bab3",
+                                    hjust = 1)) 
+
+ ggsave(here::here("day1", "day1_part_to_whole.png"), width = 7, height = 5, units = "cm")
+```
+

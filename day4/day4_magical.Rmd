@@ -1,0 +1,141 @@
+---
+title: "day3_magical"
+author: "Sung Inkyung"
+date: '2021 5 29'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(tidytext)
+library(waffle)
+library(cowplot)
+```
+
+
+```{r}
+bible <- readr::read_csv("C:/Users/inkyscope/Documents/projects/data/bible_kjv_new.csv") %>% 
+  mutate(testament = ifelse(book %in% c("Matthew", "Mark", "Luke",
+                                        "John", "Acts", "Romans", 
+                                        "1 Corinthians", 
+                                        "2 Corinthians",  "Galatians",
+                                        "Ephesians", "Philippians",
+                                        "Colossians", 
+                                        "1 Thessalonians",
+                                        "2 Thessalonians", 
+                                        "1 Timothy", "2 Timothy",
+                                        "Titus","Philemon",
+                                        "Hebrews", "James", "1 Peter",
+                                        "2 Peter", "1 John", "2 John",
+                                        "3 John","Jude", "Revelation"), "New Testament", "Old Testament"))
+```
+```{r}
+
+
+```
+
+```{r}
+bible <- bible %>% 
+  unnest_tokens(word, text) %>% 
+  anti_join(stop_words) %>% 
+  group_by(testament) %>% 
+  count(book, word, sort = T) 
+
+
+df_waffle <- bible %>% 
+  count(book, sort = T) %>% 
+  arrange(-n) %>% 
+  rename(total = n) %>% 
+  mutate(wc = round(total / 100),
+         book = factor(book, unique(book))) 
+
+theme_waffle <- function() {
+  theme_void() +
+    theme(legend.position = "bottom",
+          legend.text = element_text(size = 8,
+                                     color = "#184b44"),
+          plot.title = element_text(size = 14, 
+                                    color = "#184b44",
+                                    hjust = 0),
+          axis.text = element_blank())
+  
+}
+```
+
+
+```{r}
+library(PNWColors)
+
+pals_old <- pnw_palette("Lake", 8, type = "discrete")
+pals_new <- pnw_palette("Shuksan", 8, type = "discrete")
+
+plot_old <- df_waffle %>% 
+  filter(testament == "Old Testament",
+         wc >= 22) %>% 
+  ggplot() +
+  geom_waffle(aes(fill = book, values = wc),
+              color = "white", 
+              size = 1.3,
+              n_rows = 5) +
+  coord_equal() +
+  scale_fill_manual(values = pals_old) +
+  labs(title = "Books in Old Testament",
+       fill = "") +
+  theme_waffle()
+
+
+
+plot_new <- df_waffle %>% 
+  filter(testament == "New Testament",
+         wc >= 10) %>% 
+  ggplot() +
+  geom_waffle(aes(fill = book, values = wc),
+              color = "white", 
+              size = 1.3,
+              n_rows = 5) +
+  coord_equal() +
+  scale_fill_manual(values = pals_new) +
+  labs(title = "Books in New Testament",
+       fill = "") +
+  theme_waffle()
+
+```
+
+
+```{r}
+title <- ggdraw() +
+  draw_label("Length of Books in Old and New Testaments",
+             color = "#36413d",
+             hjust = .5,
+             size = 20)
+
+subtitle <- ggdraw() +
+  draw_label("Each square represents 100 words",
+             color = "#184b44",
+             hjust = .5,
+             size = 16)
+ 
+caption <- ggdraw() +
+  draw_label("Source: KJV | Graphic: Sung Inkyung",
+             color = "#184b44",
+             hjust = .5,
+             size = 8)
+
+p <- plot_grid(title, 
+               subtitle,
+               plot_old, 
+               plot_new,
+               caption,
+               ncol = 1,
+               rel_heights = c(.15, .07, .35, .35, .03 ))
+
+ggsave(plot = p,
+       filename = file.path("../day4", "day4_magical.png"),
+       dpi = 300, width = 15, height = 15, units = "cm")
+
+```
+

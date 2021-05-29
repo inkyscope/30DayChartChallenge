@@ -1,7 +1,7 @@
 ---
 title: "day24_monochrome"
 author: "Sung Inkyung"
-date: '2021 5 29 '
+date: '2021 5 29'
 output: html_document
 ---
 
@@ -14,7 +14,8 @@ library(tidyverse)
 library(tuneR)
 library(cowplot)
 ```
-
+### Codign Credit [30DCC by cara thompson] (https://github.com/cararthompson/30DayChartChallenge/blob/main/scripts/4.6_monochrome.R)
+### Data Credit[genuary2021 by georgios karamanis] (https://github.com/gkaramanis/aRtist/blob/main/genuary/2021/2021-28/2021-28.R) 
 
 ```{r}
 vivaldi_sp1 <- readMidi("C:/Users/inkyscope/Documents/projectR/PLFF/data/spring_no1_allegro_gp.mid")

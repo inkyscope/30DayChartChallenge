@@ -1,0 +1,106 @@
+---
+title: "day11_circular"
+author: "Sung Inkyung"
+date: '2021 5 29 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+### Source[30DCC by emil malta] (https://github.com/emilmalta/30daychartchallenge/blob/master/script/11_circle.R)
+```{r}
+library(tidyverse)
+library(tidytext)
+library(tidygraph)
+library(ggraph)
+library(ragg)
+library(here)
+```
+#paletteer::scale_colour_paletteer_d("palettetown::regice")
+
+pals <- c("0" = "#9370db",
+          "1" = "#c8a2c8",
+          "2" = "#b6d3e0",
+          "3" = "#213c5e",
+          "4" = "#d3f8f1",
+          "5" = "#485466",
+          "6" = "#131314",
+          "7" = "#ffffff",
+          "8" = "#fff803",
+          "9" = "#fffc8f")
+
+```{r}
+pi <- tibble(
+  pi = readLines("C:/Users/inkyscope/Documents/projectR/30DayChartChallenge/day11/data/pi.txt") %>% 
+    str_remove("\\.")
+)
+
+plot_pi <- pi %>% 
+  unnest_tokens(digit, pi, "characters") %>% 
+   mutate(from = paste(digit, row_number()), to = lead(from)) %>% 
+  drop_na() %>% 
+  as_tbl_graph() %>% 
+  mutate(digit = str_sub(name, end = 1L)) %>% 
+  arrange(name)
+
+
+df_pi <- pi %>% 
+  unnest_tokens(digit, pi, "characters") %>%
+  mutate(from = paste(digit, row_number()), 
+         to = lead(from)) %>% 
+  drop_na() %>% 
+  as_tbl_graph() %>% 
+  mutate(digit = str_sub(name, end = 1L)) %>% 
+  arrange(name)
+
+
+
+#paletteer::scale_colour_paletteer_d("dutchmasters::pearl_earring")
+
+
+pals <- c("0" = "#955043",
+          "1" = "#8ea8cd",
+          "2" = "#364a7c",
+          "3" = "#fdfdfb",
+          "4" = "#c0a630",
+          "5" = "#eaae66",
+          "6" = "#080702",
+          "7" = "#7b94b7",
+          "8" = "#fce9b0",
+          "9" = "#e7dbc9")
+
+  
+
+plot_pi <- df_pi %>% 
+  ggraph("linear", circular = TRUE) +
+  geom_edge_link(aes(color = digit), 
+                 alpha = .25, 
+                 show.legend = FALSE) +
+  geom_node_point(aes(color = digit), 
+                  size = 2) +
+  annotate(geom = "text", x = 0, y = -1.25, 
+           label = "pi", 
+           fontface = "italic",
+           size = 20, 
+           color = "white") +
+  scale_edge_color_manual(values = pals) +
+  scale_color_manual(values = pals) +
+  expand_limits(y = -1.5) +
+  coord_fixed() +
+  labs(color = NULL, 
+       caption = "Source: #30DayChartChallenge\nGaphic: Sung Inkyung") +
+  guides(color = guide_legend(nrow = 1, 
+                              label.position = "bottom")) +
+  theme_void() +
+  theme(
+    legend.position = "bottom", 
+    plot.background = element_rect(fill = "#231d1f", 
+                                   color = NA), 
+    plot.caption = element_text(size = 7),
+    plot.margin = margin(10,10, 10, 10),
+    text = element_text(color = "white"))
+
+ggsave(here("day11", "day11_circular.png"), dpi = 300, width = 10, height = 15, units = "cm")
+```
+

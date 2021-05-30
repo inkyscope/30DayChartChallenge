@@ -1,0 +1,56 @@
+---
+title: "Untitled"
+author: "Sung Inkyung"
+date: '2021 5 30 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+### Source[tidytuesday by gkaramanis] (https://github.com/gkaramanis/tidytuesday/blob/master/count_geom/count_geom.R)
+```{r}
+library(tidyverse)
+library(forcats)
+library(textreadr)
+```
+
+
+```{r}
+df_geoms <- textreadr::read_dir(path = here::here("C:/Users/inkyscope/Documents/projectR/datavizRscope/"),
+                             pattern = "\\.Rmd",
+                             recursive = T) %>% 
+  mutate(geom = str_extract(content, "geom_\\w+")) %>% 
+  filter(!is.na(geom)) %>% 
+  count(geom) %>% 
+  mutate(total = sum(n),
+         freq = n / sum(n),
+         geom = fct_reorder(geom, n)) %>%
+  mutate(freq = round(freq, 2)) %>% 
+  arrange(-n)
+
+plot_geoms <- df_geoms %>% 
+  ggplot() +
+  geom_col(aes(n, geom), width = .7, fill = "gray20") +
+  geom_text(aes(n + 1, geom, 
+                label = n),
+            size = 3, 
+            hjust = 0,
+            color = "gray20") +
+  labs(title = "Geoms Used in #Tidytuesday Projects Since 2018",
+       caption = "Source: Directory @inkyscope | Graphic: Sung inkyung") +
+  theme_minimal() +
+  theme(plot.background = element_rect(fill = "gray95",
+                                       color = NA),
+        plot.title = element_text(size = 16,
+                                  margin = margin(b = 10)),
+        plot.caption = element_text(size = 8, 
+                                    margin = margin(t = 20, b = 10)),
+        panel.grid.major.y = element_blank(),
+        axis.title = element_blank(),
+        axis.text = element_text(color = "gray20"))
+
+ggsave(here::here("day18", "day18_connections.png"))
+ 
+```
+

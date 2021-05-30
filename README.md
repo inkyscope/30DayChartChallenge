@@ -3,6 +3,9 @@ The #30DayChartChallenge was a challenge during April 2021 organized by Dominic 
 
 ![30 Day Chart Challenge Categories](30dcc.jpg)
 
+### day25 Uncertainties | Demographic
+![Demographic](https://github.com/inkyscope/30DayChartChallenge/blob/main/day25/day25_demographic.png)
+
 ### day24 Time Series | Monochrome
 ![Monochrome](https://github.com/inkyscope/30DayChartChallenge/blob/main/day24/day24_monochrome.png)
 

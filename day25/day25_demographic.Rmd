@@ -1,0 +1,144 @@
+---
+title: "day25 demographic"
+author: "Sung Inkyung"
+date: '2021 5 30'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+### Coding Credit [30DCC by Cara Thompson] (https://github.com/cararthompson/30DayChartChallenge/blob/main/scripts/1.1_part-to-whole.R)
+### Data Credit [30DCC by Jake Kaupp] (https://github.com/jkaupp/30DayChartChallenge/blob/master/day30/R/day30.R)
+```{r}
+library(tidyverse)
+library(gggibbous)
+library(ggtext)
+library(tidytext)
+library(ggfx)
+library(readxl)
+library(janitor)
+library(cowplot)
+library(here)
+```
+
+
+```{r}
+happiness <- here("day25", "data", "WHR20_DataForTable2.1.xls") %>% 
+  read_excel() %>% 
+  clean_names() %>% 
+  select(year, country_name, life_ladder)
+
+df_country <- happiness %>% 
+  filter(year == 2019) %>% 
+  mutate(life_ladder = life_ladder * 10,
+         life_ladder = round(life_ladder, 1)) %>% 
+  arrange(-life_ladder) %>% 
+  mutate(area = factor(country_name,
+                       levels = unique(country_name)))
+
+
+df_overall <- data.frame("area" = "overall",
+                         "scale" = median(df_country$life_ladder,
+                                                na.rm = T))
+
+```
+
+
+
+```{r}
+light <- "#00b85c"
+dark<- "#373b39"
+title <- "#00b85c"
+text <- "#bbbeb9"
+bg <- "#161717"
+
+theme_dark_moon <- function() {
+  theme_minimal() %+replace%
+    theme(legend.position = "none",
+          plot.background = element_rect(fill = bg,
+                                         colour = bg),
+          panel.background = element_rect(fill = bg,
+                                          colour = bg),
+          plot.title = element_markdown(size = 36, 
+                                        color = text,
+                                        hjust = .5,
+                                    margin = margin(t = 20, b = 7)),
+          plot.caption = element_text(size = 11,
+                                      color = text,
+                                      margin = margin(t = 20, b = 20)),
+          text = element_text(colour = text, 
+                                  size = 10), 
+          panel.grid = element_blank(),
+          axis.text = element_blank(), 
+          axis.title = element_blank(),
+          strip.text = element_text(color = text, 
+                                    size = 14),
+          axis.ticks = element_blank())
+}
+```
+
+
+```{r}
+# Overall happiness scale
+
+
+plot_overall <- df_overall %>% 
+  ggplot(aes(x = .9, y = .5)) +
+  with_outer_glow(geom_moon(aes(ratio = scale / 100),
+                            size = 50,
+                            fill = light,
+                            color = dark),
+                  expand = 5,
+                  color = light) +
+  geom_moon(aes(ratio = 1 - (scale / 100)), 
+            size = 50,
+            fill = dark, 
+            color = dark, 
+            alpha = .5, 
+            right = F) +
+  geom_textbox(data = NULL,
+               aes(x = .4, y = .5),
+               width = .7,
+               box.color = bg,
+               fill = bg,
+               color = text,
+               size = 8,
+               label = "On average, life evaluations in 2019 are <span style = 'color:#00b85c'>**5.5**</span> on the 0 to 10 scale. The survey vary from <span style = 'color:#00b85c'>**7.7**</span> to\n<span style = 'color:#00b85c'>**2.3**</span> over 148 countries.Top 15 countries are more than twice as high as in the bottom 7.\nCountries below average are 69") +
+  labs(title = "Changing **WORLD HAPPINESS** in 2019") +
+  xlim(c(0, 1)) +
+  theme_dark_moon()
+  
+```
+
+```{r}
+plot_country <- df_country %>% 
+  ggplot(aes(x = .55, y = .5)) +
+  geom_moon(aes(ratio = life_ladder / 100), 
+            fill = light, 
+            color = light, 
+            right = T) +
+  geom_moon(aes(ratio = 1 - (life_ladder / 100)), 
+            fill = dark, 
+            color = dark, 
+            alpha = 0.3, right = F) +
+  labs(caption = "Source:#30DayChartChallenge | Graphic: Sung Inkyung") +
+  facet_wrap(~ area,
+             labeller = labeller(area = label_wrap_gen(width = 12)),
+             nrow = 14) +
+  theme_dark_moon()
+```
+
+```{r}
+
+## Assemble plots
+plot_happiness <- plot_grid(plot_overall, 
+                            plot_country,
+                            ncol = 1,
+                            rel_heights = c(.2, .8))
+
+
+ggsave(here("day25", "day25_demographic.png"), dpi = 400,
+       width = 32.5, height = 40.5, units = "cm")
+```
+

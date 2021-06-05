@@ -1,0 +1,85 @@
+---
+title: "day15 Multivariate"
+author: "Sung Inkyung"
+date: '2021 6 5'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(ggbeeswarm)
+```
+
+
+```{r}
+ramen_ratings <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-06-04/ramen_ratings.csv")
+
+ramen_ratings %>% 
+  count(country, sort = T)
+```
+
+
+```{r}
+library(glue)
+
+top_country <- ramen_ratings %>% 
+  group_by(country, brand) %>% 
+  summarise(count = n()) %>% 
+  group_by(country) %>% 
+  summarise(n = n()) %>% 
+  slice_max(n = 15, order_by = n) %>% 
+  mutate(label = glue("{country} ({n})")) %>% 
+  ungroup() %>% 
+  mutate(country = fct_relevel(fct_reorder(country, n)))
+```
+
+
+```{r}
+ramen <- ramen_ratings %>% 
+  right_join(top_country) %>% 
+  filter(!is.na(stars)) %>% 
+  mutate(style = fct_relevel(fct_lump(style, 4)))
+```
+
+```{r}
+plot <- ramen %>% 
+  filter(style != "Other",
+         n >= 10) %>% 
+  ggplot(aes(stars, style)) +
+  geom_beeswarm(aes(color = style), 
+                size = .6, 
+                groupOnX = F) +
+  scale_color_manual(values = c("#316181", "#b00b69", "#f6a400", "#ff4500")) +
+  guides(color = F) +
+  facet_wrap(~ label, nrow = 3) +
+  labs(title = "Ramen Ratings",
+       subtitle = "Country with number of brands\nNumber of stars(0-5) are given by ramen raters;5 is best, 0 is worst",
+       caption = "Source: 30DayChartChallenge | Graphic: Sung Inkyung") + 
+  theme_light() +
+  theme(strip.background = element_rect(fill = "#d4383e",
+                                        color = NA),
+        strip.text = element_text(size = 14,
+                                   face = "bold"),
+        plot.title = element_text(size = 20),
+        plot.subtitle = element_text(size = 15,
+                                     margin = margin(b = 10)),
+        plot.caption = element_text(size = 10),
+        axis.title = element_blank(),
+        axis.text = element_text(color = "gray45",
+                                 face = "bold",
+                                 size = 11),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.spacing = unit(.7, "lines"))
+
+ggsave(here::here("day15", "day15_Multivarate.png"), dpi = 300, width = 30, height = 24, units = "cm")
+
+  
+```
+
+
+

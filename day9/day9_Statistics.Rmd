@@ -1,0 +1,118 @@
+---
+title: "day9 Statistics"
+author: "Sung Inkyung"
+date: '2021 6 5'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+### Source[tidytuesday by Cederic Sherer] (https://github.com/z3tt/TidyTuesday/blob/master/R/2020_28_CoffeeRatings.Rmd)
+```{r}
+library(tidyverse)
+library(ggdist)
+library(ggtext)
+```
+
+
+```{r}
+ramen_ratings <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-06-04/ramen_ratings.csv")
+
+ramen_ratings %>% 
+  count(stars, sort = T)
+```
+
+
+```{r}
+df_ramen <- ramen_ratings %>% 
+  filter(stars  != 0) %>% 
+  group_by(review_number, brand, variety, style, country) %>% 
+  summarise(total_stars = mean(stars, na.rm = T)) %>% 
+  group_by(country) %>% 
+  filter(n() >= 100) %>% 
+  mutate(med = median(total_stars),
+         min = min(total_stars),
+         n = n()) %>% 
+  ungroup() %>% 
+  mutate(country = fct_reorder(country, med),
+         y = as.numeric(country) - .3)
+
+df_ramen %>% 
+  count(country, n, sort = T)
+
+
+  df_ramen_sum <- df_ramen %>% 
+    group_by(country) %>% 
+    slice(1)
+```
+
+
+```{r}
+plot_ramen <- df_ramen %>% 
+  ggplot(aes(x = total_stars, y = y)) +
+  geom_text(data = df_ramen_sum,
+            aes(x = min, y = y ,
+                label = country,
+                size = n),
+            color = "#3d6c7d",
+            alpha = 7,
+            fontface = "bold",
+            vjust = 0,
+            hjust = .005) +
+  stat_interval(aes(y = y - .05),
+                orientation = "horizontal",
+                .width = c(.25, .5, .95, 1),
+                stroke = 0,
+                size = 1.4) +
+  geom_point(data = df_ramen_sum,
+             aes(x = med, y = y - .2),
+             shape = 17, 
+             color = "gray20",
+             size = 2.5) +
+  geom_text(data = df_ramen_sum,
+            aes(x = med + .14,
+                y = y - .11,
+                label = glue::glue("{round(med, 1)} points")),
+            color = "gray20",
+            size = 3.5,
+            vjust = 1, 
+            hjust = 0) +
+  geom_point(data = df_ramen_sum,
+             aes(x = min, y = y - .2),
+             shape = 2, 
+             color = "#646570",
+             size = 2.5) +
+  geom_text(data = df_ramen_sum,
+            aes(x = min + .14,
+                y = y - .11,
+                label = glue::glue("{round(min, 1)} points")),
+            color = "#646570",
+            size = 3.5,
+            vjust = 1, 
+            hjust = 0) +
+  scale_y_continuous(expand = c(0, 0)) +
+  scale_color_manual(values = c("grey85",  "#f6a400", "#ff6666", "#8b0000"),
+                     guide = F) +
+  scale_size(range = c(8, 15),
+             guide = F) +
+  labs(title = "Ramen Ratings",
+       subtitle = "Number of stars(0-5) are given by ramen raters; 5 is best, 0 is worst",
+       caption = "Source: 30DayChartChallenge | Graphic: Sung Inkyung") + 
+  theme_minimal() +
+  theme(plot.background = element_rect(fill = "#f7f4ed",
+                                       color = NA),
+       panel.grid = element_blank(),
+       plot.title = element_text(size = 24,
+                                 margin = margin(t = 10, b = 7)),
+       plot.subtitle = element_text(size = 16,
+                                    margin = margin(b = 25)),
+       plot.caption = element_text(size = 9,
+                                   margin = margin(t = 20, b= 10)),
+       axis.title = element_blank(),
+       axis.text = element_blank())
+
+ggsave(here::here("day9", "day9_Statistics.png"), width = 28, height = 24, units = "cm")
+```
+
+

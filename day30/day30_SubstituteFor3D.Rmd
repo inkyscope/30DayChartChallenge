@@ -56,14 +56,17 @@ df %>%
  plot <- plot_flat + plot_polar
  
  plot + plot_annotation(title = "Makeup Shades",
-                        subtitle = "6254 Hex Colors from 328 Cosmetic Products out of 107 Foundation Brands, ",
+                        subtitle = "6254 hex colors from 328 cosmetic products out of 107 foundation brands",
                         caption = "Source: The Pudding Data | Graphic: Sung Inkyung") &
    theme(plot.background = element_rect(fill = "black"),
-         plot.title = element_text(size = 24, 
+         plot.title = element_text(size = 20, 
                                    color = "white"),
-         plot.subtitle = element_text(size = 16, 
-                                   color = "white"),
-         plot.caption = element_text(size = 9,
+         plot.subtitle = element_text(size = 14, 
+                                   color = "white",
+                                   margin = margin(b = 15)),
+         plot.caption = element_text(size = 8,
                                      color = "white"))
+ 
+ ggsave(here::here("day30", "day30_SubstituteFor3D.png"), dpi = 300, width = 20, height = 16, units = "cm")
 ```
 

@@ -1,0 +1,69 @@
+---
+title: "day30 3D"
+author: "Sung Inkyung"
+date: '2021 6 6'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(ggfx)
+library(patchwork)
+```
+
+
+```{r}
+allCategories <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-03-30/allCategories.csv')
+allShades <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-03-30/allShades.csv')
+
+
+```
+
+
+```{r}
+df <- allCategories %>% 
+  right_join(allShades)
+
+df %>% 
+  count(brand, sort = T) ## 107
+df %>% 
+  count(product, sort = T) ## 328
+df %>% 
+  count(hex, sort = T) ## 6254
+  
+ plot_flat <- df %>% 
+  ggplot(aes(sat, lightness, col = hex)) +
+  with_blur(geom_point(show.legend = F)) +
+  scale_x_continuous(limits = c(.1, .9)) +
+  scale_y_continuous(limits = c(.1, .9)) +
+  #coord_polar() +
+  theme_void() +
+  theme(plot.background = element_rect(fill = "black"))
+ 
+ plot_polar <- df %>% 
+  ggplot(aes(sat, lightness, col = hex)) +
+  with_blur(geom_point(show.legend = F)) +
+  scale_x_continuous(limits = c(.1, .9)) +
+  scale_y_continuous(limits = c(.1, .9)) +
+  coord_polar() +
+  theme_void() +
+  theme(plot.background = element_rect(fill = "black"))
+ 
+ plot <- plot_flat + plot_polar
+ 
+ plot + plot_annotation(title = "Makeup Shades",
+                        subtitle = "6254 Hex Colors from 328 Cosmetic Products out of 107 Foundation Brands, ",
+                        caption = "Source: The Pudding Data | Graphic: Sung Inkyung") &
+   theme(plot.background = element_rect(fill = "black"),
+         plot.title = element_text(size = 24, 
+                                   color = "white"),
+         plot.subtitle = element_text(size = 16, 
+                                   color = "white"),
+         plot.caption = element_text(size = 9,
+                                     color = "white"))
+```
+

@@ -1,0 +1,167 @@
+---
+title: "day5 Slope"
+author: "Sung Inkyung"
+date: '2021 6 8'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+### Source:[newggslopegraph by Chuck Powell](https://ibecav.netlify.app/post/more-on-slopegraphs/)
+```{r}
+library(tidyverse)
+library(ggthemes)
+library(CGPfunctions)
+```
+
+
+```{r}
+
+nobel_winners <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-05-14/nobel_winners.csv") %>% 
+  distinct(full_name, prize_year, category, .keep_all = TRUE) %>% 
+  mutate(decade = 10 * (prize_year %/% 10))
+```
+
+```{r}
+theme_slope <- theme_minimal() +
+  theme(legend.position = "none",
+        plot.title = element_text(size = 14, 
+                                  face = "bold", 
+                                  hjust = 0),
+       plot.subtitle = element_text(size = 11,
+                                       hjust = 0,
+                                    margin = margin(b = 15)),
+       plot.caption = element_text(size = 7),
+       axis.text.x.top = element_text(),
+       axis.title.y = element_blank(),
+       axis.text.y = element_blank(),
+       axis.title.x = element_blank(),
+       panel.grid.major.y = element_blank(),
+       panel.grid.minor.x = element_blank(),
+       panel.grid.minor.y = element_blank(),
+       axis.ticks = element_blank())
+
+theme_set(theme_slope)
+
+```
+
+
+```{r}
+df_nobel <- nobel_winners %>% 
+  group_by(decade, category, gender) %>% 
+  summarise(total = sum(n())) %>% 
+  filter(!is.na(gender)) %>% 
+  mutate(gender = factor(gender, c("Male", "Female"), 
+                         c("Men", "Women")),
+         decade = factor(decade)) %>% 
+  group_by(gender)
+
+df_peace <- df_nobel %>% 
+  filter(category == "Peace")
+
+color<- c("grey80", "#f94552")
+
+newggslopegraph(dataframe = df_peace,
+                decade, total, gender,
+                LineColor = color,
+                LineThickness = 1.5,
+                YTextSize = 2.5,
+                DataTextSize = 2.5,
+                DataLabelPadding = .15,
+                Title = "NOBEL PEACE PRIZE",
+                SubTitle = "Nobel peace awards by gender",
+                Caption = "Source: #30DayChartChallenge | Graphic: Sung Inkyung") +
+  theme_slope
+
+ggsave(here::here("day5", "day5_Slope.png"), width = 22, height = 13, units = "cm")
+
+```
+
+```{r}
+df_literature <- df_nobel %>% 
+  filter(category == "Literature")
+
+newggslopegraph(dataframe = df_literature,
+                decade, total, gender,
+                LineColor = color,
+                LineThickness = 1.5,
+                YTextSize = 4,
+                DataTextSize = 3,
+                Title = "Nobel Prize in Literature",
+                SubTitle = "1910-2010",
+                Caption = "Source: #30DayChartChallenge | Graphic: Sung Inkyung") +
+  theme_slope
+```
+
+
+```{r}
+df_chemistry <- df_nobel %>% 
+  filter(category == "Chemistry")
+
+newggslopegraph(dataframe = df_chemistry,
+                decade, total, gender,
+                LineColor = color,
+                LineThickness = 1.5,
+                YTextSize = 4,
+                DataTextSize = 3,
+                Title = "NOBEL CHEMISTRY PRIZE",
+                SubTitle = "1910-2010",
+                Caption = "Source: #30DayChartChallenge | Graphic: Sung Inkyung") +
+  theme_slope
+```
+
+
+```{r}
+df_medicine <- df_nobel %>% 
+  filter(category == "Medicine")
+
+newggslopegraph(dataframe = df_chemistry,
+                decade, total, gender,
+                LineColor = color,
+                LineThickness = 1.5,
+                YTextSize = 4,
+                DataTextSize = 3,
+                Title = "NOBEL MEDICINE PRIZE",
+                SubTitle = "1910-2010",
+                Caption = "Source: #30DayChartChallenge | Graphic: Sung Inkyung") +
+  theme_slope
+```
+
+
+```{r}
+df_physics <- df_nobel %>% 
+  filter(category == "Physics")
+
+newggslopegraph(dataframe = df_chemistry,
+                decade, total, gender,
+                LineColor = color,
+                LineThickness = 1.5,
+                YTextSize = 4,
+                DataTextSize = 3,
+                Title = "NOBEL PHYSICS PRIZE",
+                SubTitle = "1910-2010",
+                Caption = "Source: #30DayChartChallenge | Graphic: Sung Inkyung") +
+  theme_slope
+```
+
+
+```{r}
+df_economics <- df_nobel %>% 
+  filter(category == "Economics")
+
+newggslopegraph(dataframe = df_chemistry,
+                decade, total, gender,
+                LineColor = color,
+                LineThickness = 1.5,
+                YTextSize = 4,
+                DataTextSize = 3,
+                Title = "NOBEL ECONOMICS PRIZE",
+                SubTitle = "1910-2010",
+                Caption = "Source: #30DayChartChallenge | Graphic: Sung Inkyung") +
+  theme_slope
+
+
+
+```
+

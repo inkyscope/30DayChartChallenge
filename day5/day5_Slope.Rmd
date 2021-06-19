@@ -1,7 +1,7 @@
 ---
-title: "day5_Slope"
+title: "Comparison_Slope"
 author: "Sung Inkyung"
-date: '2021 6 19 '
+date: '2021 6 19'
 output: html_document
 ---
 

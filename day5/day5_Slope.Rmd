@@ -1,167 +1,106 @@
 ---
-title: "day5 Slope"
+title: "day5_Slope"
 author: "Sung Inkyung"
-date: '2021 6 8'
+date: '2021 6 19 '
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-### Source:[newggslopegraph by Chuck Powell](https://ibecav.netlify.app/post/more-on-slopegraphs/)
+
 ```{r}
 library(tidyverse)
-library(ggthemes)
-library(CGPfunctions)
+library(ggtext)
 ```
 
 
 ```{r}
-
-nobel_winners <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-05-14/nobel_winners.csv") %>% 
-  distinct(full_name, prize_year, category, .keep_all = TRUE) %>% 
-  mutate(decade = 10 * (prize_year %/% 10))
-```
-
-```{r}
-theme_slope <- theme_minimal() +
-  theme(legend.position = "none",
-        plot.title = element_text(size = 14, 
-                                  face = "bold", 
-                                  hjust = 0),
-       plot.subtitle = element_text(size = 11,
-                                       hjust = 0,
-                                    margin = margin(b = 15)),
-       plot.caption = element_text(size = 7),
-       axis.text.x.top = element_text(),
-       axis.title.y = element_blank(),
-       axis.text.y = element_blank(),
-       axis.title.x = element_blank(),
-       panel.grid.major.y = element_blank(),
-       panel.grid.minor.x = element_blank(),
-       panel.grid.minor.y = element_blank(),
-       axis.ticks = element_blank())
-
-theme_set(theme_slope)
-
+tweets <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-06-15/tweets.csv')
 ```
 
 
 ```{r}
-df_nobel <- nobel_winners %>% 
-  group_by(decade, category, gender) %>% 
-  summarise(total = sum(n())) %>% 
-  filter(!is.na(gender)) %>% 
-  mutate(gender = factor(gender, c("Male", "Female"), 
-                         c("Men", "Women")),
-         decade = factor(decade)) %>% 
-  group_by(gender)
-
-df_peace <- df_nobel %>% 
-  filter(category == "Peace")
-
-color<- c("grey80", "#f94552")
-
-newggslopegraph(dataframe = df_peace,
-                decade, total, gender,
-                LineColor = color,
-                LineThickness = 1.5,
-                YTextSize = 2.5,
-                DataTextSize = 2.5,
-                DataLabelPadding = .15,
-                Title = "NOBEL PEACE PRIZE",
-                SubTitle = "Nobel peace awards by gender",
-                Caption = "Source: #30DayChartChallenge | Graphic: Sung Inkyung") +
-  theme_slope
-
-ggsave(here::here("day5", "day5_Slope.png"), width = 22, height = 13, units = "cm")
-
-```
-
-```{r}
-df_literature <- df_nobel %>% 
-  filter(category == "Literature")
-
-newggslopegraph(dataframe = df_literature,
-                decade, total, gender,
-                LineColor = color,
-                LineThickness = 1.5,
-                YTextSize = 4,
-                DataTextSize = 3,
-                Title = "Nobel Prize in Literature",
-                SubTitle = "1910-2010",
-                Caption = "Source: #30DayChartChallenge | Graphic: Sung Inkyung") +
-  theme_slope
+tweets_tt <- tweets %>% 
+  mutate(tt = str_detect(tolower(content), "#tidytuesday")) %>% 
+  filter(!is.na(tt)) %>% 
+  group_by(tt) %>% 
+  summarise(
+    like_ratio = sum(like_count)/n(),
+    retweet_ratio = sum(retweet_count)/n()
+  ) %>% 
+  ungroup()
 ```
 
 
 ```{r}
-df_chemistry <- df_nobel %>% 
-  filter(category == "Chemistry")
+plot_slope <- tweets_tt %>% 
+  ggplot() +
+  geom_line(aes(x = as.numeric(tt), 
+                y = like_ratio), 
+            size = 2.5, 
+            color = "#fbba00") +
+  geom_line(aes(x = as.numeric(tt), 
+                y = retweet_ratio), 
+            size = 2.5, 
+            color = "#d41735") +
+  geom_point(aes(x = as.numeric(tt), 
+                 y = like_ratio), 
+             size = 15, 
+             color = "#fbba00") +
+  geom_point(aes(x = as.numeric(tt), 
+                 y = retweet_ratio), 
+             size = 15, 
+             color = "#d41735") +
+  geom_text(aes(x = as.numeric(tt), 
+                y = like_ratio, 
+                label = round(like_ratio, 1)), 
+            size = 5, 
+            color = "#d41735") +
+  geom_text(aes(x = as.numeric(tt), 
+                y = retweet_ratio, 
+                label = round(retweet_ratio, 1)),  
+            size = 5, 
+            color = "#fbba00") +
+  annotate("text", x = c(0, 1), 
+           y = 29.5, 
+           label = c("w/o #TidyTuesday", "w/ #TidyTuesday"),
+           size = 7,
+           color = "#22194E") +
+  annotate("text", x = -0.075, 
+           y = c(min(tweets_tt$like_ratio),
+                 min(tweets_tt$retweet_ratio)), 
+           label = c("likes", "retweets"),
+           hjust = 1,  
+           size = 5) +
+ xlim(-0.25, 1.25) +
+ scale_y_continuous(breaks = c(0, 10, 20), 
+                    limits = c(0, 29.9)) +
+  coord_cartesian(expand = FALSE, clip = "off") +
+  labs(title = "DuBuois Chart Challenge in #TidyTuesday",
+       subtitle = "Ratio of likes and retweets to total number of tweets\nwith and without #TidyTuesday",
+       caption = "Source: Anthony Starks, Allen Hillery Sekou Tyler | Graphic: Sung Inkyung") +
+  theme_minimal() +
+  theme(plot.background = element_rect(fill = "#ede0d0",
+                                       color = NA),
+        panel.background = element_rect(fill = "#ede0d0",
+                                       color = NA),
+        plot.title = element_text(size = 24),
+    plot.subtitle = element_text(size = 14, 
+                                  margin = margin(b = 20)),
+    plot.caption = element_text(size = 9, 
+                                margin = margin(t = 10)),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.title.x = element_blank(),
+    plot.margin = margin(10, 10, 10, 10))
 
-newggslopegraph(dataframe = df_chemistry,
-                decade, total, gender,
-                LineColor = color,
-                LineThickness = 1.5,
-                YTextSize = 4,
-                DataTextSize = 3,
-                Title = "NOBEL CHEMISTRY PRIZE",
-                SubTitle = "1910-2010",
-                Caption = "Source: #30DayChartChallenge | Graphic: Sung Inkyung") +
-  theme_slope
-```
-
-
-```{r}
-df_medicine <- df_nobel %>% 
-  filter(category == "Medicine")
-
-newggslopegraph(dataframe = df_chemistry,
-                decade, total, gender,
-                LineColor = color,
-                LineThickness = 1.5,
-                YTextSize = 4,
-                DataTextSize = 3,
-                Title = "NOBEL MEDICINE PRIZE",
-                SubTitle = "1910-2010",
-                Caption = "Source: #30DayChartChallenge | Graphic: Sung Inkyung") +
-  theme_slope
-```
-
-
-```{r}
-df_physics <- df_nobel %>% 
-  filter(category == "Physics")
-
-newggslopegraph(dataframe = df_chemistry,
-                decade, total, gender,
-                LineColor = color,
-                LineThickness = 1.5,
-                YTextSize = 4,
-                DataTextSize = 3,
-                Title = "NOBEL PHYSICS PRIZE",
-                SubTitle = "1910-2010",
-                Caption = "Source: #30DayChartChallenge | Graphic: Sung Inkyung") +
-  theme_slope
-```
-
-
-```{r}
-df_economics <- df_nobel %>% 
-  filter(category == "Economics")
-
-newggslopegraph(dataframe = df_chemistry,
-                decade, total, gender,
-                LineColor = color,
-                LineThickness = 1.5,
-                YTextSize = 4,
-                DataTextSize = 3,
-                Title = "NOBEL ECONOMICS PRIZE",
-                SubTitle = "1910-2010",
-                Caption = "Source: #30DayChartChallenge | Graphic: Sung Inkyung") +
-  theme_slope
-
-
+ggsave(here::here("day5", "day5_Slope.png"), width = 18, height = 22, units = "cm")
 
 ```
 

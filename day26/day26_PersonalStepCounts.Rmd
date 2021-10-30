@@ -54,7 +54,7 @@ plot1 <- df1 %>%
                                        color = NA),
         panel.background = element_rect(fill = "#e8dcca",
                                        color = NA),
-        plot.title = element_text(size = 18, 
+        plot.title = element_text(size = 16, 
                                   hjust = 0.5),
         plot.caption = element_text(size = 7),
         axis.title.x = element_blank(),
@@ -100,15 +100,17 @@ plot2 <- df2 %>%
              strip.position = "bottom") +
   labs(fill = NULL,
        title = "Yearly Average Walking Distance(km) by Seasons",
-       subtitle = "In particular, winter in 2018 is highlited with walking distance",
+       subtitle = "In particular, winter in 2018 is highlited with my daily stroll",
        caption = "Source: Personal step count record | Graphic: Sung Inkyung") +
   theme_minimal() +
   theme(plot.title = element_text(size = 18, 
                                   face = "bold", 
-                                  margin = margin(t = 10)),
+                                  margin = margin(t = 10, b = 5)),
         plot.subtitle = element_text(size = 13, 
-                                     margin = margin(b = 10)),
-        plot.caption = element_text(size = 8,
+                                     margin = margin(b = 15)),
+        plot.caption = element_text(size = 9,
                                     margin = margin(t= 20, b = 5)),
         panel.grid = element_blank())
+
+ggsave(here::here("day26", "d26_PersonalStepCounts2.png"), dpi = 300, width = 20, height = 22, units = "cm")
 ```

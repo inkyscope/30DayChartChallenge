@@ -1,0 +1,26 @@
+---
+title: "day7_distribution_physical"
+author: "Sung Inkyung"
+date: '2021 10 30'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(imager)
+library(tidyverse)
+```
+
+
+```{r}
+img <- load.image("C:/Users/inkyscope/Documents/projectR/30DayChartChallenge/data/letter_distribution.png")
+
+imager::save.image(img, "day7/d7_letter_distribution.png")
+
+```
+
+
+

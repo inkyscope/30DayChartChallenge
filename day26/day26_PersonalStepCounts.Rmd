@@ -1,0 +1,114 @@
+---
+title: "StepCounts"
+author: "Sung Inkyung"
+date: '2021 10 30'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(ggtext)
+
+```
+
+
+```{r}
+stepcounts <- readr::read_csv("C:/Users/inkyscope/Documents/projectR/30DayChartChallenge/data/inkystepcounts.csv")%>% 
+  mutate(year = year(date),
+         month = month(date)) 
+```
+scale_fill_gradient2(low = "#ff3131",  mid = "#e0ff3d", high = "#56defb",
+                       labels = scales::comma,
+                       guide = guide_legend(title = "Step counts"))
+
+```{r}
+ df1 <- stepcounts %>% 
+  group_by(year, month) %>% 
+  summarize(total_steps = sum(steps, na.rm = T),
+            total_distance = sum(distance, na.rm = T),
+            total_stairs = sum(stairs, na.rm = T)) 
+
+plot1 <- df1 %>% 
+  ggplot(aes(x = month, y = as.factor(year))) +
+  geom_tile(aes(fill = total_steps),
+            color = "white",
+            size = 0.3) +
+  scale_fill_gradient(low = "#f0a3a3",high = "#56defb",
+                       labels = scales::comma,
+                       guide = guide_legend(title = "Step counts")) + 
+  scale_x_continuous(breaks = seq(1, 12, 1),
+                     labels = month.abb) +
+  labs(title = "Total Monthly Step Counts Since 2015",
+       caption = "Source: Personal record | Graphic: Sung Inkyung") +
+  coord_cartesian(expand = FALSE,
+                  clip = "off") +
+  theme(legend.position = "bottom",
+        legend.background = element_rect(fill = "#e8dcca",
+                                             color = NA),
+        plot.background = element_rect(fill = "#e8dcca",
+                                       color = NA),
+        panel.background = element_rect(fill = "#e8dcca",
+                                       color = NA),
+        plot.title = element_text(size = 18, 
+                                  hjust = 0.5),
+        plot.caption = element_text(size = 7),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.ticks = element_blank())
+
+ggsave(here::here("day26", "d26_PersonalStepCounts.png"), dpi = 300, width = 20, height = 12, units = "cm")
+```
+
+```{r}
+library(waffle)
+
+df2 <- stepcounts %>% 
+  group_by(year, month) %>% 
+  summarize(total_steps = sum(steps, na.rm = T),
+            total_distance = sum(distance, na.rm = T),
+            total_stairs = sum(stairs, na.rm = T),
+            avg_distance = mean(distance, na.rm = T)) %>%
+  mutate(season = case_when(
+    month %in% c(12, 1, 2) ~ "Winter",
+    month %in% c(3, 4, 5) ~ "Spring",
+    month %in% c(6, 7, 8) ~ "Summer",
+    month %in% c(9, 10, 11) ~ "Fall"
+  )) %>% 
+  count(year, season, avg_distance) %>% 
+  mutate(avg_distance = round(avg_distance, 1)) 
+
+plot2 <- df2 %>% 
+  ggplot(aes(values = avg_distance,
+             fill = season)) +
+  geom_waffle(color = "white", size = 0.4, 
+              n_rows = 10, 
+              flip = TRUE) +
+  scale_y_continuous(labels = function(x) x * 10,
+                     expand = c(0, 0)) +
+  scale_x_discrete() +
+  scale_fill_manual(values = c("#c5cf7f", "#ff598f", "#d45b12", "#42687c"),
+                    label = c("Spring", "Summer", "Fall", "Winter")) +
+  coord_equal() +
+  facet_wrap(~ year, nrow = 1, 
+             strip.position = "bottom") +
+  labs(fill = NULL,
+       title = "Yearly Average Walking Distance(km) by Seasons",
+       subtitle = "In particular, winter in 2018 is highlited with walking distance",
+       caption = "Source: Personal step count record | Graphic: Sung Inkyung") +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 18, 
+                                  face = "bold", 
+                                  margin = margin(t = 10)),
+        plot.subtitle = element_text(size = 13, 
+                                     margin = margin(b = 10)),
+        plot.caption = element_text(size = 8,
+                                    margin = margin(t= 20, b = 5)),
+        panel.grid = element_blank())
+```

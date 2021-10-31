@@ -1,0 +1,111 @@
+---
+title: "day16_circle_trees"
+author: "Sung Inkyung"
+date: '2021 10 31'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(ggraph)
+library(igraph)
+library(lubridate)
+library(paletteer)
+library(patchwork)
+library(here)
+```
+
+
+```{r}
+tweet_df <- read_csv("C:/Users/inkyscope/Documents/projectR/30DayChartChallenge/data/tweets_ga.csv") %>% 
+  mutate(hour = hour(created_at),
+         day = day(created_at))
+
+tweet_circle0 <- data.frame(from = "day", to = 0:23)
+
+#day27
+
+tweet_circle1 <- tweet_df %>% 
+  filter(day == 27) %>% 
+  filter(is_retweet) %>% 
+  summarize(from = hour, to = retweet_status_id)
+
+tweet_circle2 <- tweet_df %>% 
+  filter(day == 27) %>% 
+  filter(is_retweet) %>% 
+  summarize(from = retweet_status_id, to = status_id)
+
+edges <- rbind(tweet_circle0, tweet_circle1, tweet_circle2)
+mygraph <- graph_from_data_frame(edges)
+
+circle_depth <- c("day", "hour", "tweet", "retweets")
+
+
+plot_circle1 <- ggraph(mygraph, layout = "circlepack") +
+  geom_node_circle(aes(fill = factor(depth)),
+                   color = "#cbbeb5",
+                   size = 0.15) +
+  scale_fill_paletteer_d("rockthemes::nodoubt",
+                         labels = circle_depth) +
+  labs(fill = "",
+       title = "October 27, 2021") +
+  coord_fixed() +
+  theme_void() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+```{r}
+#day30
+
+tweet_circle1 <- tweet_df %>% 
+  filter(day == 30) %>% 
+  filter(is_retweet) %>% 
+  summarize(from = hour, to = retweet_status_id)
+
+tweet_circle2 <- tweet_df %>% 
+  filter(day == 30) %>% 
+  filter(is_retweet) %>% 
+  summarize(from = retweet_status_id, to = status_id)
+
+edges <- rbind(tweet_circle0, tweet_circle1, tweet_circle2)
+mygraph <- graph_from_data_frame(edges)
+
+circle_depth <- c("day", "hour", "tweet", "retweets")
+
+
+plot_circle2 <- ggraph(mygraph, layout = "circlepack") +
+  geom_node_circle(aes(fill = factor(depth)),
+                   color = "#cbbeb5",
+                   size = 0.15) +
+  scale_fill_paletteer_d("rockthemes::nodoubt",
+                         labels = circle_depth) +
+  labs(fill = "",
+       title = "October 30, 2021") +
+  coord_fixed() +
+  theme_void() +
+  theme(legend.position = "none",
+        plot.title = element_text(hjust = 0.5))
+
+```
+
+
+```{r}
+plot_circle1 + plot_circle2 +
+  plot_annotation("Retweets tagged with #generative art",
+                  caption = "Source: Twitter | Credit: @gkaramanis | Graphic: Sung Inkyung",
+                  theme = theme(
+                    plot.title = element_text(size = 16, 
+                                              hjust = 0.5),
+                    plot.caption = element_text(size = 9,
+                                                hjust = 0.5)
+                  )) +
+  ggsave(here("day16", "d16_circle_trees.png"), dpi = 300)
+
+
+```
+

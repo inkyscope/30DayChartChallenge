@@ -1,0 +1,70 @@
+---
+title: "Uncertainties_Future"
+author: "Sung Inkyung"
+date: '2021 10 31'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+### Source[30DayChartChallenge by @gkaramanis] (https://github.com/gkaramanis/30DayChartChallenge/blob/master/2021/day-3-historical/day-3-historical.R)
+```{r}
+library(rtweet)
+library(tidyverse)
+library(lubridate)
+library(ggbump)
+library(ggtext)
+
+tweets_ga <- search_tweets("#generative art", n = 10000) 
+
+tweets_hour <- tweets_ga %>% 
+  select(created_at) %>% 
+  mutate(hour = hour(created_at),
+         date = date(created_at),
+         label = stamp("October 1")(date),
+         is_today = if_else(date == date(Sys.Date()), TRUE, FALSE)) %>% 
+  filter(date > as.Date("2021-10-27")) %>% 
+  group_by(date, hour) %>% 
+  mutate(n = n()) %>% 
+  ungroup() %>% 
+  group_by(date) %>% 
+  mutate(max_hour = max(hour)) %>% 
+  ungroup()
+
+plot <- ggplot(tweets_hour) +
+  geom_bump(aes(hour, n, group = date,
+                color = factor(date),
+                size = if_else(is_today, 1.25, 0.25)),
+            lineend = "round", smooth = 7) +
+  geom_text(aes(max_hour, n,
+                label = if_else(max_hour == hour,
+                                label, NULL),
+                color =factor(date)),
+            stat = "unique",
+            hjust = 0,
+            nudge_x = 0.5,
+            size = 2) +
+  scale_size_identity() +
+  scale_color_manual(values = c("#d4d4d4", "#9c9c9c", "#636363", "#00ced1")) +
+  labs(title = "Hourly tweets tagged with #generative art<br><span style = 'color:#00ced1'>**Today**</span> vs <span style = 'color:#474747'>previous days</span>",
+       x = "Hour of Day",
+       y = "",
+       caption = "**Source**: Twitter | **Graphic**: Sung Inkyung") +
+  coord_cartesian(clip = "off") +
+  theme_minimal() +
+  theme(legend.position = "none",
+        plot.title = element_markdown(hjust = 0.5,
+                                      lineheight = 1.2),
+        plot.caption = element_markdown(color = "#474747",
+                                        size = 7),
+        panel.grid.minor.y = element_blank(),
+        axis.text = element_text(color = "#474747"),
+        plot.margin = margin(10, 40, 10, 20))
+  
+  
+  
+
+write_as_csv(tweets_ga, "tweets_ga.csv")
+```
+

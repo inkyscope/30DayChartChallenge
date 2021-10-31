@@ -15,9 +15,8 @@ library(ggsci)
 library(gganimate)
 ```
 
-
 ```{r}
-load("C:/Users/inkyscope/Documents/projects/tidytuesday/data/gapminder.rda")
+load("C:/Users/inkyscope/Documents/projectR/30DayChartChallenge/data/gapminder.rda")
 
 
 df <- gapminder %>% 
@@ -47,6 +46,9 @@ plot <- df %>%
   transition_time(year) +
   ease_aes("linear") +
   guides(fill = guide_legend(override.aes = list(size = 4))) +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") 
+
+anim_save("d22_life_experience.gif", plot)
+
 ```
 

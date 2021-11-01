@@ -27,5 +27,8 @@ The #30DayChartChallenge was a challenge during April 2021 organized by Dominic 
 ### day7 Distribution | Physical
 ![letter distribution](https://github.com/inkyscope/30DayChartChallenge/blob/main/day7/d7_letter_distribution.png)
 
+### day6 Comparison | Experimental
+![Experimental](https://github.com/inkyscope/30DayChartChallenge/blob/main/day6/d6_experimental.png)
+
 ### day1 Comparison | Part to Whole One
 ![Part to Whole One](https://github.com/inkyscope/30DayChartChallenge/blob/main/day1/day1_part_to_whole.png)

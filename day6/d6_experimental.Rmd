@@ -1,0 +1,152 @@
+---
+title: "Untitled"
+author: "Sung Inkyung"
+date: '2021 11 1'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(ggtext)
+library(ggstream)
+library(ggbump)
+library(paletteer)
+```
+### Source[ggstream pacakge by davids joberg] (https://github.com/davidsjoberg/ggstream)
+
+```{r}
+stepcounts <- readr::read_csv("C:/Users/inkyscope/Documents/projectR/30DayChartChallenge/data/inkystepcounts.csv")
+
+```
+
+
+```{r}
+df <- stepcounts %>% 
+  mutate(year = year(date),
+         month = month(date)) %>% 
+  group_by(year, month) %>% 
+  summarize(total_steps = sum(steps, na.rm = T),
+            total_distance = sum(distance, na.rm = T),
+            total_stairs = sum(stairs, na.rm = T),
+            na.rm = TRUE) %>% 
+  mutate(total_distance = round(total_distance, 1),
+         total_stairs = round(total_stairs, 0))
+```
+
+
+```{r}
+plot_stream <- df %>% 
+  filter(year %in% 2016:2019) %>% 
+  ggplot(aes(factor(month), total_steps,
+             fill = factor(year),
+             group = factor(year))) +
+  geom_stream() +
+  scale_x_discrete(labels = month.abb) +
+  scale_y_continuous(labels = scales::label_number_si()) +
+  scale_fill_paletteer_d("rockthemes::janelle") +
+  labs(x = "",
+      y = "",
+      title = "Total Monthly Step Counts",
+      caption = "Source: Personal record | Graphic: Sung Inkyung") +
+  theme_light() +
+  theme(legend.position = "bottom",
+        legend.title = element_blank(),
+        panel.grid.major.x = element_line(size = 0.4,
+                                          color = "gray90"),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        axis.ticks = element_blank())
+```
+
+```{r}
+plot_bump <- df %>% 
+  ggplot(aes(x = month, y = total_stairs,
+             color = factor(year))) +
+  geom_point(size = 4) +
+  geom_text(data = df %>% filter(month == 1),
+            aes(x = month - .1, 
+                label = paste0(year, " : ", total_distance)),
+            hjust = 0,
+            vjust = -1,
+            size = 3.5,
+            face = "bold",
+            color = "gray70") +
+  geom_text(data = df %>% filter(month == 12),
+            aes(x = month + .1, 
+                label = paste0(year, " : ", total_distance)),
+            hjust = 0, 
+            size = 3.5,
+            face = "bold",
+            color = "gray70") +
+  geom_text(data = df %>% filter(month == 10 & year == 2021),
+            aes(x = month + .1, 
+                label = paste0(year, " : ", total_distance)),
+            hjust = 0,
+            size = 3.5,
+            face = "bold",
+            color = "gray70") +
+  geom_bump(size = 1.5, 
+            smooth = 8) +
+  scale_x_continuous(
+                     breaks = seq(1, 12, 1),
+                     labels = c("1" = "Jan",
+                                "2" = "Feb",
+                                "3" = "Mar",
+                                "4" = "Apr",
+                                "5" = "May",
+                                "6" = "Jun",
+                                "7" = "Jul",
+                                "8" = "Aug",
+                                "9" = "Sep",
+                                "10" = "Oct",
+                                "11" = "Nov",
+                                "12" = "Dec"),
+                     position = "top") +
+  scale_y_continuous(limits = c(0, 400),
+                     breaks = seq(0, 400, 50)) +
+  scale_color_paletteer_d("futurevisions::grand_tour") +
+  labs(x = "",
+       y = "Total Monthly Walking Stairs",
+       title = "<span style = 'color: #418D87FF'> **2 0 1 5**</span> <span style = 'color: gray90'>**-**</span><span style = 'color: #F6EBD1FF'> **2 0 2 1**</span>",
+       subtitle = "Total Monthly Walking Distance(km) vs Stairs: It turned out that they didn't always go together",
+       caption = "Source: Personal record | Graphic: Sung Inkyung") +
+  theme_void() +
+  theme(legend.position = "none",
+        plot.background = element_rect(fill = "gray30",
+                                       color = "gray30"),
+        plot.title = element_markdown(size = 50,
+                                      hjust = 0.5,
+                                     margin = margin(b = 5)),
+        plot.subtitle = element_text(size = 20,
+                                     color = "white",
+                                     hjust = 0.5,
+                                     margin = margin(b = 20)),                         
+        plot.caption = element_text(size = 11,
+                                    color = "white",
+                                    hjust = 1, 
+                                    margin = margin(t= 20, b = 5)),
+        axis.text.x = element_text(size = 14,
+                                   color = "gray90"),
+        axis.text.y = element_text(size = 14,
+                                   color = "gray90"),
+        axis.title.y.left = element_text(size = 12,
+                                         color = "white",
+                                         vjust = 0.5,
+                                         angle = 90),
+        plot.margin = margin(10, 10, 10, 10))
+
+ggsave(here::here("day6", "d6_experimental.png"), width = 50, height = 22, units = "cm")
+ 
+```
+
+```{r}
+paletteer_d("futurevisions::grand_tour")
+
+```
+

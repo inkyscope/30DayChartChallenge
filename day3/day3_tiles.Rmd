@@ -1,0 +1,80 @@
+---
+title: "day23 Tiles"
+author: "Sung Inkyung"
+date: '2021 6 6'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(scales)
+library(janitor)
+```
+### Source[etherium historical price] (https://ethereumprice.org/history/)
+### source[etherium colors] (https://colorswall.com/palette/6108/):#48cbd9, #79e7e7, #14044d, #716b94, #c6c5d4, #37367b
+
+```{r}
+etherium <- readr::read_csv("C:/Users/inkyscope/Documents/projectR/30DayChartChallenge/data/etherium_historical_data.csv") %>% 
+  clean_names()
+```
+
+
+```{r}
+eth <- etherium %>% 
+  mutate(time = as_datetime(timestamp),
+         date = as.Date(time),
+         price = as.numeric(open))
+
+eth %>% 
+  count(price, sort = T) %>% 
+  summarize(price = min(price)) ## 0.42-4172.33
+```
+
+```{r}
+plot_strips <- eth %>% 
+  ggplot(aes(date, 1, fill = price)) +
+  geom_tile() +
+  scale_x_date(labels = label_date_short(),
+               date_breaks = "4 month") +
+  scale_fill_gradient(low = "#37367b",
+                      high = "#79e7e7",
+                      limits = c(0, 4000),
+                      breaks = seq(0, 4000, 1000),
+                      labels = c("0", "1,000",  "2,000",  "3,000", "4,000")) +
+  guides(fill = guide_colorbar(title.position = "top",
+                               title.hjust = .5, 
+                               barwidth = unit(15, 'lines'),
+                               barheight = unit(.3, 'lines'))) +
+  labs(fill = "Price (USD)",
+       x = " ", 
+       y = " ",
+       title = "E T H E R E U M",
+       subtitle = "Daily Ethereum price from 7th August 2015 to 6th June 2021",
+       caption = "Source: ethereumprice.org | Graphic: Sung Inkyung") +
+  theme(legend.position = "top",
+        legend.background = element_rect(fill = "#c6c5d4"),
+        panel.background = element_rect(fill = "#c6c5d4"),
+        plot.background = element_rect(fill = "#c6c5d4"),
+        panel.grid = element_blank(),
+        plot.title = element_text(size = 24,
+                                  color = "#79e7e7",
+                                  face = "bold",
+                                  hjust = .5),
+        plot.subtitle = element_text(size = 16,
+                                     color = "#37367b",
+                                  hjust = .5),
+        plot.caption = element_text(size = 9,
+                                    color = "#37367b",
+                                  hjust = .5),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank())
+  
+ggsave(here::here("day3", "day3_tiles.png"), dpi = 300, width = 20, height = 14, units = "cm")
+  
+```
+

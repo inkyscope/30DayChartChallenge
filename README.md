@@ -12,6 +12,9 @@ The #30DayChartChallenge was a challenge during April 2021 organized by Dominic 
 ### day24 Time Series | Monochrome
 ![Monochrome](https://github.com/inkyscope/30DayChartChallenge/blob/main/day24/day24_monochrome.png)
 
+### day23 Time Series | Tiles
+![Tiles](https://github.com/inkyscope/30DayChartChallenge/blob/main/day23/day23_tile.png)
+
 ### day16 Relationships | Trees
 ![Trees](https://github.com/inkyscope/30DayChartChallenge/blob/main/day16/d16_circle_trees.png)
 

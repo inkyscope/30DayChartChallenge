@@ -1,0 +1,177 @@
+---
+title: "day29_Deviation"
+author: "Sung Inkyung"
+date: '2021 11 2'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(paletteer)
+library(lubridate)
+library(scales)
+```
+
+
+```{r}
+stepcounts <- readr::read_csv("C:/Users/inkyscope/Documents/projectR/30DayChartChallenge/data/inkystepcounts.csv") %>% 
+  rename(weekday = "day") %>% 
+  mutate(year = year(date),
+         month = month(date),
+         day = day(date)) 
+
+ df <- stepcounts %>% 
+  group_by(year, month, day) %>% 
+  summarize(total_steps = sum(steps, na.rm = T),
+            total_distance = sum(distance, na.rm = T),
+            total_stairs = sum(stairs, na.rm = T),
+            na.rm = TRUE) %>% 
+  mutate(total_distance = round(total_distance, 1),
+         total_stairs = round(total_stairs, 0))
+ 
+ top_steps <- df %>% 
+   group_by(year) %>% 
+   top_n(1, total_steps) %>% 
+   ungroup()
+ 
+ plot_data <- df %>% 
+  ungroup() %>% 
+  mutate(color = case_when(
+    total_steps == 22600 ~ "#073642FF",
+    total_steps == 23411 ~ "#268BD2FF",
+    total_steps == 26218 ~ "#DC322FFF",
+    total_steps == 22799 ~ "#2AA198FF",
+    total_steps == 27311 ~ "#B58900FF",
+    total_steps == 21698 ~ "#6C71C4FF",
+    total_steps == 26180 ~ "#D33682FF",
+    TRUE ~ "gray60"))
+```
+
+
+```{r}
+plot_steps_day <- plot_data %>% 
+  ggplot(aes(day, total_steps,
+             group = year,
+             col = color,
+             fill = color,
+             alpha = total_steps %in% top_steps)) +
+  geom_step(aes(size = total_steps %in% top_steps)) +
+  geom_point(data = . %>% 
+               group_by(year) %>% 
+               top_n(1, total_steps),
+             shape = 21, 
+             aes(col = color), 
+             size = 2.5, 
+             stroke = 1) +
+  geom_text(data = . %>% 
+              group_by(year) %>% 
+              top_n(1, total_steps) %>% 
+              mutate(record = paste0(month, ", ", year, ": ", total_steps, " ")),
+            aes(label = record, 
+                hjust = -0.1), 
+            size = 3) +
+  scale_color_identity() +
+  scale_fill_identity() +
+  scale_alpha_manual(values = c(0.7, 1), 
+                     guide = FALSE) +
+  scale_size_manual(values = c(0.5, 0.8),
+                    guide = FALSE) +
+  scale_x_continuous(breaks = seq(1, 31, 1)) +
+  labs(
+    x = "",
+    y = "",
+    title = "Daily Strolling Step Counts 2015 - 2021",
+    caption = "Source: Personal data record | Graphic: Sung Inkyung") +
+  theme(plot.title = element_text(size = 20,
+                                  hjust = 0.5),
+        plot.caption = element_text(size = 9,
+                                      hjust = 0.5,
+                                    color = "gray60"),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_line(color = "gray85", 
+                                          size = 0.3),
+        axis.line.x = element_line(size = 0.3, 
+                                   color = "#212121"),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()
+        ) 
+
+plot_steps_day
+
+ggsave(here::here("day29", "d29_Deviation.png"), width = 28, height = 12, units = "cm")
+  
+```
+
+
+```{r}
+paletteer_d("ggthemr::solarized")
+```
+
+
+```{r}
+plot_steps_month <- plot_data %>% 
+  ggplot(aes(month, total_steps,
+             group = year,
+             col = color,
+             fill = color,
+             alpha = total_steps %in% top_steps)) +
+  geom_step(aes(size = total_steps %in% top_steps)) +
+  geom_point(data = . %>% 
+               group_by(year) %>% 
+               top_n(1, total_steps),
+             shape = 21, 
+             aes(col = color), 
+             size = 2.5) +
+  geom_text(data = . %>% 
+              group_by(year) %>% 
+              top_n(1, total_steps) %>% 
+              mutate(record = paste0(month, ", ", year, " :", total_steps, " ")),
+            aes(label = record, 
+                hjust = -0.1),
+            size = 3) +
+  scale_color_identity() +
+  scale_fill_identity() +
+  scale_alpha_manual(values = c(0.7, 1), 
+                     guide = FALSE) +
+  scale_size_manual(values = c(0.5, 0.8),
+                    guide = FALSE) +
+  scale_x_continuous(
+                     breaks = seq(1, 12, 1),
+                     labels = c("1" = "Jan",
+                                "2" = "Feb",
+                                "3" = "Mar",
+                                "4" = "Apr",
+                                "5" = "May",
+                                "6" = "Jun",
+                                "7" = "Jul",
+                                "8" = "Aug",
+                                "9" = "Sep",
+                                "10" = "Oct",
+                                "11" = "Nov",
+                                "12" = "Dec"),
+                     expand = c(0.05, 0.07)) +
+  #scale_y_continuous(labels = scales::label_number_si()) +
+  labs(
+    x = "",
+    y = "",
+    title = "Monthly Strolling Step Counts 2015 - 2021",
+    caption = "Source: Personal data record | Graphic: Sung Inkyung") +
+  theme(plot.caption = element_text(hjust = 0),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_line(color = "gray85", 
+                                          size = 0.3),
+        axis.ticks.y = element_blank(),
+        axis.line.x = element_line(size = 0.3, 
+                                   color = "#212121"),
+        axis.text.y = element_blank())
+  
+```
+

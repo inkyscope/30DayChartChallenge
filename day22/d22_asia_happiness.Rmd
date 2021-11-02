@@ -1,0 +1,65 @@
+---
+title: "Untitled"
+author: "Sung Inkyung"
+date: '2021 11 2 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(gganimate)
+library(paletteer)
+```
+
+```{r}
+happiness <- here("C:/Users/inkyscope/Documents/projectR/30DayChartChallenge/data/WHR20_DataForTable2.1.xls") %>% 
+  read_excel() %>% 
+  clean_names() %>% 
+  select(year, country_name, life_ladder, sd_mean = standard_deviation_of_ladder_by_country_year)
+
+
+asia <- ne_countries(scale = "medium",
+                     type = "map_units",
+                     returnclass = "sf",
+                     continent = "Asia") %>% 
+  select(sovereignt, subregion, pop_est, income_grp)
+
+
+asia_happy <- happiness %>% 
+  left_join(asia,by = c("country_name" ="sovereignt")) %>% 
+  filter(!is.na(pop_est)) 
+```
+
+
+```{r}
+plot <- asia_happy %>% 
+  ggplot(aes(life_ladder, pop_est, 
+             fill = subregion,
+             size = pop_est,
+             group = "country_name")) +
+  geom_point(shape = 21, 
+             alpha = 0.7) +
+  scale_fill_paletteer_d("fishualize::Callanthias_australis") +
+  scale_size(range = c(4, 30), 
+             guide = FALSE) +
+  scale_x_continuous(breaks = seq(0, 10, .5)) +
+  scale_y_log10() +
+  labs(x = "Life ladder",
+       y = "Estimated popuation",
+       title = "Happiness | Year {frame_time}",
+       subtitle = "Happiness index between 2009 and 2018 in Asia",
+       caption = "Source: DS Labs package | Graphic: Sung Inkyung") +
+  theme_minimal() +
+  transition_time(year) +
+  ease_aes("linear") +
+  guides(fill = guide_legend(override.aes = list(size = 4))) +
+  theme(legend.position = "bottom") 
+
+anim_save("d22_asia_happiness.gif", plot)
+```
+
+

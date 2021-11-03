@@ -15,11 +15,11 @@ The #30DayChartChallenge was a challenge during April 2021 organized by Dominic 
 ### day23 Time Series | Tiles
 ![Tiles](https://github.com/inkyscope/30DayChartChallenge/blob/main/day23/day23_tile.png)
 
+### day22 Time Series | Animation
+![Animation](https://github.com/inkyscope/30DayChartChallenge/blob/main/day22/d22_asia_happiness.gif)
+
 ### day16 Relationships | Trees
 ![Trees](https://github.com/inkyscope/30DayChartChallenge/blob/main/day16/d16_circle_trees.png)
-
-### day13 Relationships | Correlation
-![Correlation](https://github.com/inkyscope/30DayChartChallenge/blob/main/day13/day13_Correlation.png)
 
 ### day11 Distribution | Circular
 ![Part to Whole One](https://github.com/inkyscope/30DayChartChallenge/blob/main/day11/day11_circular.png)

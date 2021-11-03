@@ -1,0 +1,113 @@
+---
+title: "day27_educational"
+author: "Sung Inkyung"
+date: '2021 1 31'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+### Source[Alluvial Plots in ggplot2 by Jason Cory Brunson] (https://cran.r-project.org/web/packages/ggalluvial/vignettes/ggalluvial.html)
+### Source[Alluvia across strata] (https://corybrunson.github.io/ggalluvial/reference/geom_alluvium.html)
+```{r}
+library(tidyverse)
+library(ggtext)
+library(ggalluvial)
+library(pals)
+library(here)
+
+
+plastics <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-01-26/plastics.csv')
+
+
+
+
+summary_data <- plastics %>% 
+  filter(!parent_company %in% c("Grand Total", "Unbranded", "null", "NULL", "Assorted")) %>% 
+  group_by(parent_company) %>% 
+  summarize(across(empty:grand_total, ~sum(.x, na.rm = TRUE))) %>% 
+  arrange(desc(grand_total)) %>% 
+  pivot_longer(empty:grand_total,
+               names_to = "type")
+
+summary_data %>% 
+  filter(type == "grand_total") %>% 
+  slice_max(n = 10, order_by = value)
+
+
+```
+
+```{r}
+df_plastic <- summary_data %>% 
+  mutate(parent_company = case_when(parent_company == "Pepsico" ~ "PepsiCo",
+                                    parent_company == "Universal Robina Corporation" ~ "Universal\nRobina",
+                                    parent_company == "Colgate-Palmolive" ~ "Colgate-\nPalmolive",
+                                    parent_company == "Pure Water, Inc." ~ "Pure\nWater.\nInc.",
+                                    TRUE ~ parent_company)) %>% 
+  filter(type != "grand_total" & type != "empty") %>% 
+  filter(parent_company %in% c(
+                              'The Coca-Cola Company',
+                              'La Doo',
+                              'Universal\nRobina',
+                              'Nestlé',
+                              'Unilever',
+                              'Colgate-\nPalmolive',
+                              "Barna",
+                              "Pure\nWater.\nInc.",
+                              "PepsiCo"
+                              )) %>%
+  mutate(type = str_to_upper(type))
+  
+```
+
+
+
+```{r}
+plot <- df_plastic %>% 
+  ggplot(aes(y = value, 
+             axis1 = fct_reorder(type, value),
+             axis2 = fct_reorder(parent_company, value),
+             fill = fct_reorder(type, value))) +
+  geom_alluvium(curve_type = "sigmoid") + 
+  geom_stratum(width = 1/8, 
+               size = .7,
+               color = "white") +
+  geom_text(stat = "stratum",
+            aes(label = fct_reorder(parent_company, value)),
+            size = 4.5,
+            fontface = "bold",
+            nudge_x = .01) +
+  scale_fill_manual(values = as.vector(cols25(9)),
+                    limits = c("PET", "O", "PP",
+                               "LDPE", "PVC", "PS", "HDPE"),
+                    labels = c("PET", "Other", "PP",
+                               "LDPE", "PVC", "PS", "HDPE")) +
+  guides(fill = guide_legend(nrow = 1)) +
+  labs(title = "Plastic Types by Comapnies With Most Collected in 2019-2020",
+       subtitle = "Top 6 companies are selected along with plsastic types collected by volunteers around world<br>in the **Break Free from Plastic** events in 2019-2020",
+       caption = "Source:Break Free from Plastic | Graphic: Sung Inkyung",
+       fill = "Plastic type") +
+  coord_flip() +
+  theme_void() +
+  theme(legend.position = "bottom",
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 13),
+        legend.key.size = unit(7, "mm"),
+        legend.key = element_blank(),
+        legend.margin = margin(t = 10),
+        plot.title = element_text(size = 24, 
+                                  hjust = .5,
+                                  margin = margin(b = 5)),
+        plot.subtitle = element_markdown(size = 18,
+                                         hjust = .5,
+                                         margin = margin(b = 15)),
+        plot.caption = element_text(size = 13,
+                                    color = "gray45",
+                                    margin = margin(t = 25)))
+
+ggsave(plot = plot,
+       filename = file.path("../day27", "day27_educational.png"),
+       dpi = 300, width = 40, height = 25, units = "cm")
+```
+

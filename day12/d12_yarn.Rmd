@@ -1,0 +1,23 @@
+---
+title: "day12_strips"
+author: "Sung Inkyung"
+date: '2021 11 3'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(imager)
+```
+
+
+```{r}
+img <- load.image("C:/Users/inkyscope/Documents/projectR/30DayChartChallenge/data/yarn.png")
+
+imager::save.image(img, "day12/d12_yarn.png")
+```
+

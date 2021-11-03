@@ -3,6 +3,9 @@ The #30DayChartChallenge was a challenge during April 2021 organized by Dominic 
 
 ![30 Day Chart Challenge Categories](30dcc.jpg)
 
+### day27 Uncertainties | Educational
+![Educational](https://github.com/inkyscope/30DayChartChallenge/blob/main/day27/day27_educational.png)
+
 ### day26 Uncertainties | Trend
 ![Trend](https://github.com/inkyscope/30DayChartChallenge/blob/main/day26/d26_PersonalStepCounts.png)
 
@@ -21,7 +24,7 @@ The #30DayChartChallenge was a challenge during April 2021 organized by Dominic 
 ### day16 Relationships | Trees
 ![Trees](https://github.com/inkyscope/30DayChartChallenge/blob/main/day16/d16_circle_trees.png)
 
-### day12 Distribution | Strips
+### day12 Distribution | Strips(physical)
 ![Yarn Strips](https://github.com/inkyscope/30DayChartChallenge/blob/main/day12/d12_yarn.png)
 
 ### day11 Distribution | Circular

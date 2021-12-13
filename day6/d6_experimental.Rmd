@@ -84,14 +84,7 @@ plot_bump <- df %>%
             size = 3.5,
             face = "bold",
             color = "gray70") +
-  geom_text(data = df %>% filter(month == 10 & year == 2021),
-            aes(x = month + .1, 
-                label = paste0(year, " : ", total_distance)),
-            hjust = 0,
-            size = 3.5,
-            face = "bold",
-            color = "gray70") +
-  geom_bump(size = 1.5, 
+   geom_bump(size = 1.5, 
             smooth = 8) +
   scale_x_continuous(
                      breaks = seq(1, 12, 1),

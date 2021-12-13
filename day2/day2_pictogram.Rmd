@@ -59,7 +59,7 @@ plot <- df %>%
                      breaks = seq(0, 30000, 5000),
                      expand = c(0, 0)) +
   labs(title = "Plastic Types by Comapnies With Most Collected in 2019-2020",
-       subtitle = "Illustrated below that amount of plastics along with top 6 companies collected by voluteers around world<br>in the **Break Free from Plastic** events in 2019-2020",
+       subtitle = "Illustrated below that amount of plastics along with top 20 companies collected by voluteers around world<br>in the **Break Free from Plastic** events in 2019-2020",
        caption = "Source:Break Free from Plastic | Graphic: Sung Inkyung") +
   theme_minimal() +
   theme(legend.position = "none",
@@ -79,16 +79,13 @@ plot <- df %>%
         axis.ticks.x = element_line(color = "#101012", 
                                     size = 0.3),
         axis.text.y = element_text(hjust = 1),
-        
-        
-        panel.grid.major.x = element_line(color = "gray85", 
+         panel.grid.major.x = element_line(color = "gray85", 
                                           size = 0.3),
         axis.title = element_blank(),
-        
         plot.margin = unit(c(1, 1, 1, 0.6), "cm"))
 
 ggsave(here::here("day2", "day2_pictogram.png"),
-       dpi = 300, width = 28, height = 24, units = "cm")
+       dpi = 300, width = 31, height = 24, units = "cm")
 
 ```
 

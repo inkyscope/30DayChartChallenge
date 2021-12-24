@@ -81,7 +81,7 @@ plot_autumn <- vivaldi %>%
 
 ```{r}
 spring_title <- ggdraw() +
-  draw_label("S P R I N G\nallegro",,
+  draw_label("S P R I N G\nallegro",
              hjust = .5, 
              size = 20)
 
@@ -94,7 +94,7 @@ signature <- ggdraw() +
   draw_image("C:/Users/inkyscope/Documents/projectR/30DayChartChallenge/day24/data/VivaldiSignature.png", scale = .7) 
 
 caption <- ggdraw() +
-  draw_label("Source: #30DayChartChallenge | Graphic: Sung Inkyung",
+  draw_label("Source: #30DayChartChallenge | Graphic: Sung Inkyung\nCredit: Cara Thompson",
              hjust = 0.5, size = 10)
 
 ## Assemble and export ----
@@ -108,7 +108,7 @@ plot_grid(NULL,
           ncol = 1,
           rel_heights = c(0.05, 0.15, 0.08, 0.3, 0.08, 0.3, 0.05))
 
-ggsave(here("day24", "day24_monochrome.png"), dpi = 400,
-       width = 20, height = 26, units = "cm")
+ggsave(here::here("day24", "day24_monochrome.png"), dpi = 400,
+       width = 20, height = 26, units = "cm", type = "cairo")
 ```
 

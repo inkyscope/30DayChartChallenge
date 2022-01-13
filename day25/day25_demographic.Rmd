@@ -20,6 +20,14 @@ library(readxl)
 library(janitor)
 library(cowplot)
 library(here)
+library(showtext)
+
+font_add_google("Rajdhani")
+font_add_google("Saira Condensed")
+
+showtext_opts(dpi = 320)
+showtext_auto(enable = TRUE)
+
 ```
 
 
@@ -61,18 +69,22 @@ theme_dark_moon <- function() {
           panel.background = element_rect(fill = bg,
                                           colour = bg),
           plot.title = element_markdown(size = 36, 
+                                        family = "Rajdhani",
                                         color = text,
                                         hjust = .5,
                                     margin = margin(t = 20, b = 7)),
           plot.caption = element_text(size = 11,
+                                      family = "Saira Condensed",
                                       color = text,
                                       margin = margin(t = 20, b = 20)),
           text = element_text(colour = text, 
-                                  size = 10), 
+                              family = "Saira Condensed",
+                              size = 10), 
           panel.grid = element_blank(),
           axis.text = element_blank(), 
           axis.title = element_blank(),
           strip.text = element_text(color = text, 
+                                    family = "Saira Condensed",
                                     size = 14),
           axis.ticks = element_blank())
 }
@@ -138,7 +150,6 @@ plot_happiness <- plot_grid(plot_overall,
                             rel_heights = c(.2, .8))
 
 
-ggsave(here("day25", "day25_demographic.png"), 
-       width = 33, height = 47, units = "cm")
+ggsave("day25_demographic.png", width = 33, height = 47, units = "cm")
 ```
 

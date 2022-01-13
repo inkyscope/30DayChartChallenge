@@ -14,6 +14,15 @@ library(tidyverse)
 library(lubridate)
 library(scales)
 library(janitor)
+library(showtext)
+
+font_add_google("Merriweather")
+font_add_google("Merriweather Sans")
+font_add_google("Rajdhani")
+font_add_google("Jost")
+
+showtext_opts(dpi = 320)
+showtext_auto(enable = T)
 ```
 ### Source[etherium historical price] (https://ethereumprice.org/history/)
 ### source[etherium colors] (https://colorswall.com/palette/6108/):#48cbd9, #79e7e7, #14044d, #716b94, #c6c5d4, #37367b
@@ -62,19 +71,25 @@ plot_strips <- eth %>%
         plot.background = element_rect(fill = "#c6c5d4"),
         panel.grid = element_blank(),
         plot.title = element_text(size = 24,
+                                  family = "Merriweather",
                                   color = "#79e7e7",
                                   face = "bold",
                                   hjust = .5),
-        plot.subtitle = element_text(size = 16,
+        plot.subtitle = element_text(size = 13,
+                                     family = "Merriweather Sans",
                                      color = "#37367b",
-                                  hjust = .5),
+                                     hjust = .5),
         plot.caption = element_text(size = 9,
+                                    family = "Jost",
                                     color = "#37367b",
                                   hjust = .5),
+        axis.text.x = element_text(size = 8,
+                                   family = "Rajdhani"),
         axis.text.y = element_blank(),
-        axis.ticks.y = element_blank())
+        axis.ticks.y = element_blank(),
+        plot.margin = margin(10, 10, 10, 10))
   
-ggsave(here::here("day3", "day3_tiles.png"), dpi = 300, width = 20, height = 14, units = "cm")
+ggsave("day3_tiles.png", dpi= 300, width = 20, height = 14, units = "cm")
   
 ```
 

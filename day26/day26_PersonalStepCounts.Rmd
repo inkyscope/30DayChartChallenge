@@ -13,7 +13,14 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(lubridate)
 library(ggtext)
+library(showtext)
 
+font_add_google("Fredoka One")
+font_add_google("Comfortaa")
+font_add_google("Saira Condensed")
+
+showtext_opts(dpi = 320)
+showtext_auto(enable = TRUE)
 ```
 
 
@@ -22,9 +29,7 @@ stepcounts <- readr::read_csv("C:/Users/inkyscope/Documents/projectR/30DayChartC
   mutate(year = year(date),
          month = month(date)) 
 ```
-scale_fill_gradient2(low = "#ff3131",  mid = "#e0ff3d", high = "#56defb",
-                       labels = scales::comma,
-                       guide = guide_legend(title = "Step counts"))
+
 
 ```{r}
  df1 <- stepcounts %>% 
@@ -50,20 +55,33 @@ plot1 <- df1 %>%
   theme(legend.position = "bottom",
         legend.background = element_rect(fill = "#e8dcca",
                                              color = NA),
+        legend.key = element_rect(fill = "white"),
+        legend.key.size = unit(0.3, "cm"),
+        legend.title = element_text(family = "Comfortaa",
+                                    size = 8),
+        legend.text = element_text(family = "Comfortaa",
+                                   size = 7),
         plot.background = element_rect(fill = "#e8dcca",
                                        color = NA),
         panel.background = element_rect(fill = "#e8dcca",
                                        color = NA),
-        plot.title = element_text(size = 16, 
-                                  hjust = 0.5),
-        plot.caption = element_text(size = 7),
+        plot.title = element_text(family = "Comfortaa",
+                                  size = 15, 
+                                  hjust = 0.5,
+                                  margin = margin(b =15)),
+        plot.caption = element_text(family = "Saira Condensed",
+                                    size = 6,
+                                    color = "gray65"),
+        axis.text = element_text(family = "Comfortaa",
+                                 size = 7),
         axis.title.x = element_blank(),
         axis.title.y = element_blank(),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
-        axis.ticks = element_blank())
+        axis.ticks = element_blank(),
+        plot.margin = margin(20, 20, 20, 20))
 
-ggsave(here::here("day26", "d26_PersonalStepCounts.png"), dpi = 300, width = 20, height = 12, units = "cm")
+ggsave("day26_PersonalStepCounts.png", width = 16, height = 12, units = "cm")
 ```
 
 ```{r}
@@ -88,29 +106,32 @@ plot2 <- df2 %>%
   ggplot(aes(values = avg_distance,
              fill = season)) +
   geom_waffle(color = "white", size = 0.4, 
-              n_rows = 10, 
+              n_rows = 4, 
               flip = TRUE) +
   scale_y_continuous(labels = function(x) x * 10,
                      expand = c(0, 0)) +
   scale_x_discrete() +
-  scale_fill_manual(values = c("#c5cf7f", "#ff598f", "#d45b12", "#42687c"),
+  scale_fill_manual(values = c("#c5cf7f", "#ff598f", "#11ddee", "#42687c"),
                     label = c("Spring", "Summer", "Fall", "Winter")) +
   coord_equal() +
   facet_wrap(~ year, nrow = 1, 
              strip.position = "bottom") +
   labs(fill = NULL,
-       title = "Yearly Average Walking Distance(km) by Seasons",
-       subtitle = "In particular, winter in 2018 is highlited with my daily stroll",
-       caption = "Source: Personal step count record | Graphic: Sung Inkyung") +
+       title = "Yearly Average Walking Distance(km) by Season",
+       caption = "Source: Personal step count record\nGraphic: Sung Inkyung") +
   theme_minimal() +
-  theme(plot.title = element_text(size = 18, 
+  theme(legend.position = "bottom",
+        legend.text = element_text(family = "Comfortaa"),
+        plot.title = element_text(family = "Comfortaa",
+                                  size = 14, 
                                   face = "bold", 
-                                  margin = margin(t = 10, b = 5)),
-        plot.subtitle = element_text(size = 13, 
-                                     margin = margin(b = 15)),
-        plot.caption = element_text(size = 9,
+                                  margin = margin(t = 10, b = 10)),
+        plot.caption = element_text(family = "Saira Condensed",
+                                    size = 9,
                                     margin = margin(t= 20, b = 5)),
-        panel.grid = element_blank())
+        axis.text = element_text(family = "Saira Condensed"),
+        panel.grid = element_blank(),
+        plot.margin = margin(10, 10, 10, 10))
 
-ggsave(here::here("day26", "d26_PersonalStepCounts2.png"), dpi = 300, width = 20, height = 22, units = "cm")
+ggsave("day26_PersonalStepCounts2.png", width = 15, height = 20, units = "cm")
 ```

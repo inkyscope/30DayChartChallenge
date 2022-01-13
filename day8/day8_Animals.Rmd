@@ -1,5 +1,5 @@
 ---
-title: "Untitled"
+title: "Dog's Life"
 author: "Sung Inkyung"
 date: '2021 6 8 '
 output: html_document
@@ -12,23 +12,21 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(tidyverse)
 library(ggforce)
+library(showtext)
+
+font_add_google("Lilita One")
+font_add_google("Comfortaa")
+font_add_google("karla")
+
+showtext_opts(dpi = 320)
+showtext_auto(enable = TRUE)
 ```
 
 
 ```{r}
 animal_outcomes <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-21/animal_outcomes.csv')
-
-animal_outcomes %>% 
-  count(year, sort = T) #1999-2018
-
-animal_outcomes %>% 
-  count(outcome, sort = T)
-
-animal_outcomes %>% 
-  count(animal_type, sort = T)
-
-
 ```
+
 ```{r}
 dog_outcome <- animal_outcomes %>% 
   filter(animal_type == "Dogs") %>% 
@@ -39,63 +37,63 @@ dog_outcome <- animal_outcomes %>%
     TRUE ~ "Other"),
     outcome = factor(outcome),
     outcome = fct_relevel(outcome, "Euthanized", "Rescued", "Other")) %>% 
+  filter(outcome != "Other") %>% 
   group_by(year, outcome) %>% 
   summarise(count = sum(total)) %>% 
   mutate(prc = count / sum(count),
          prc = round(prc, 2))
-
-dog_outcome %>% 
-  count(prc, sort = T)
 ```
 
 
 ```{r}
-desc <- "Rate of being euthanized are over 80% since 2015."
+desc <- "Rate of being rescued are over 80% since 2015."
   
 plot <- dog_outcome %>% 
   ggplot(aes(year, prc)) +
   geom_line(aes(color = outcome),
             size = 1.3) + 
-  geom_mark_ellipse(aes(x = 2015, y = .8,
-                       label = "Euthanized"),
+  geom_mark_ellipse(aes(x = 2015, y = .85,
+                       label = "RESCUED"),
                    label.buffer = unit(20, "mm"),
                    label.minwidth = unit(30, "mm"),
                    label.fontsize = c(11, 9),
                    label.fill = "#dad9d7",
-                   description = desc) +
+                   description = desc,
+                   family = "Karla") +
   scale_x_continuous(limits = c(2000, 2018),
                      breaks = seq(2000, 2018, 5)) +
   scale_y_continuous(limits = c(0, 1),
                      breaks = seq(0, 1, .25),
                      labels = scales::percent_format()) +
-  scale_color_manual(values = c("#fcba03", "#805b00", "#93bd8c"), 
+  scale_color_manual(values = c("Euthanized" = "#fcba03", 
+                                "Rescued" = "#805b00"), 
                      name = " ") +
   labs(x = "",
        y = "",
        title = "Dog's Life in Australia",
-       subtitle = "Dogs have been less likely to have chances to be rehomed, reclaimed or transferred",
+       subtitle = "The more rescues(rehomed, reclaimed or transferred) the less euthanasia",
        caption = "Source: RSPCA | #30DayChartChallenge | Graphic: Sung Inkyung") +
   theme_light() +
   theme(legend.position = "top",
         legend.background = element_rect(fill = "#dad9d7"),
         legend.key = element_rect(fill = "#dad9d7"),
+        legend.text = element_text(family = "Comfortaa",
+                                   size = 12),
         plot.background = element_rect(fill = "#dad9d7"),
         panel.background = element_rect(fill = "#dad9d7"),
-        plot.title = element_text(size = 24, 
+        plot.title = element_text(family = "Lilita One",
+                                  size = 27, 
                                   hjust = .5, 
                                   margin = margin(t = 15, b = 7)),
-        plot.subtitle = element_text(size= 14, 
+        plot.subtitle = element_text(family = "Comfortaa",
+                                     size= 15, 
                                      hjust = .5,
                                      margin = margin(b = 20)),
-        plot.caption = element_text(size = 9,
-                                    hjust = .5))
+        plot.caption = element_text(family = "Karla",
+                                    size = 9,
+                                    hjust = .5),
+        axis.ticks = element_blank(),
+        plot.margin = margin(15, 10, 10, 10))
   
-  
-ggsave(here::here("day8", "day8_Animals.png"), width = 30, height = 20, units = "cm")
-
+ggsave("day8_Animals.png", width = 30, height = 20, units = "cm")
 ```
-
-
-```{r}
-```
-

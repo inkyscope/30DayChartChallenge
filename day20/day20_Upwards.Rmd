@@ -13,6 +13,14 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(ggthemes)
 library(CGPfunctions)
+library(showtext)
+
+font_add_google("Anton")
+font_add_google("Roboto")
+font_add_google("Rambla")
+
+showtext_opts(dpi = 320)
+showtext_auto(enable = TRUE)
 ```
 
 
@@ -26,17 +34,24 @@ nobel_winners <- readr::read_csv("https://raw.githubusercontent.com/rfordatascie
 ```{r}
 theme_slope <- theme_minimal() +
   theme(legend.position = "none",
-        plot.title = element_text(size = 14, 
-                                  face = "bold", 
+        plot.title = element_text(size = 18, 
+                                  family = "Anton", 
                                   hjust = 0),
-       plot.subtitle = element_text(size = 11,
-                                       hjust = 0,
+       plot.subtitle = element_text(size = 13,
+                                    family = "Roboto",
+                                    hjust = 0,
                                     margin = margin(b = 15)),
-       plot.caption = element_text(size = 7),
-       axis.text.x.top = element_text(),
+       plot.caption = element_text(size = 8,
+                                   family = "Roboto",
+                                   color = "gray55",
+                                   margin = margin(t = 25)),
+       axis.text.x.top = element_text(family = "Rambla",
+                                      size = 9),
        axis.title.y = element_blank(),
        axis.text.y = element_blank(),
        axis.title.x = element_blank(),
+       panel.grid.major.x = element_line(size = 0.04,
+                                         color = "gray75"),
        panel.grid.major.y = element_blank(),
        panel.grid.minor.x = element_blank(),
        panel.grid.minor.y = element_blank(),
@@ -74,94 +89,6 @@ newggslopegraph(dataframe = df_peace,
                 Caption = "Source: #30DayChartChallenge | Graphic: Sung Inkyung") +
   theme_slope
 
-ggsave(here::here("day5", "day5_Slope.png"), width = 22, height = 13, units = "cm")
+ggsave("day20_Upward.png", width = 27, height = 10, units = "cm")
 
 ```
-
-```{r}
-df_literature <- df_nobel %>% 
-  filter(category == "Literature")
-
-newggslopegraph(dataframe = df_literature,
-                decade, total, gender,
-                LineColor = color,
-                LineThickness = 1.5,
-                YTextSize = 4,
-                DataTextSize = 3,
-                Title = "Nobel Prize in Literature",
-                SubTitle = "1910-2010",
-                Caption = "Source: #30DayChartChallenge | Graphic: Sung Inkyung") +
-  theme_slope
-```
-
-
-```{r}
-df_chemistry <- df_nobel %>% 
-  filter(category == "Chemistry")
-
-newggslopegraph(dataframe = df_chemistry,
-                decade, total, gender,
-                LineColor = color,
-                LineThickness = 1.5,
-                YTextSize = 4,
-                DataTextSize = 3,
-                Title = "NOBEL CHEMISTRY PRIZE",
-                SubTitle = "1910-2010",
-                Caption = "Source: #30DayChartChallenge | Graphic: Sung Inkyung") +
-  theme_slope
-```
-
-
-```{r}
-df_medicine <- df_nobel %>% 
-  filter(category == "Medicine")
-
-newggslopegraph(dataframe = df_chemistry,
-                decade, total, gender,
-                LineColor = color,
-                LineThickness = 1.5,
-                YTextSize = 4,
-                DataTextSize = 3,
-                Title = "NOBEL MEDICINE PRIZE",
-                SubTitle = "1910-2010",
-                Caption = "Source: #30DayChartChallenge | Graphic: Sung Inkyung") +
-  theme_slope
-```
-
-
-```{r}
-df_physics <- df_nobel %>% 
-  filter(category == "Physics")
-
-newggslopegraph(dataframe = df_chemistry,
-                decade, total, gender,
-                LineColor = color,
-                LineThickness = 1.5,
-                YTextSize = 4,
-                DataTextSize = 3,
-                Title = "NOBEL PHYSICS PRIZE",
-                SubTitle = "1910-2010",
-                Caption = "Source: #30DayChartChallenge | Graphic: Sung Inkyung") +
-  theme_slope
-```
-
-
-```{r}
-df_economics <- df_nobel %>% 
-  filter(category == "Economics")
-
-newggslopegraph(dataframe = df_chemistry,
-                decade, total, gender,
-                LineColor = color,
-                LineThickness = 1.5,
-                YTextSize = 4,
-                DataTextSize = 3,
-                Title = "NOBEL ECONOMICS PRIZE",
-                SubTitle = "1910-2010",
-                Caption = "Source: #30DayChartChallenge | Graphic: Sung Inkyung") +
-  theme_slope
-
-
-
-```
-

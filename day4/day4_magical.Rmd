@@ -13,7 +13,16 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(tidytext)
 library(waffle)
+library(PNWColors)
 library(cowplot)
+library(showtext)
+
+font_add_google("Anton")
+font_add_google("Roboto Condensed")
+font_add_google("Merriweather Sans")
+
+showtext_auto(enable = TRUE)
+showtext_opts(dpi = 320)
 ```
 
 
@@ -33,10 +42,7 @@ bible <- readr::read_csv("C:/Users/inkyscope/Documents/projects/data/bible_kjv_n
                                         "2 Peter", "1 John", "2 John",
                                         "3 John","Jude", "Revelation"), "New Testament", "Old Testament"))
 ```
-```{r}
-
-
-```
+``
 
 ```{r}
 bible <- bible %>% 
@@ -56,20 +62,20 @@ df_waffle <- bible %>%
 theme_waffle <- function() {
   theme_void() +
     theme(legend.position = "bottom",
-          legend.text = element_text(size = 8,
-                                     color = "#184b44"),
-          plot.title = element_text(size = 14, 
-                                    color = "#184b44",
-                                    hjust = 0),
+          legend.text = element_text(color = "#184b44",
+                                     family = "Roboto Condensed",
+                                       size = 13),
+          legend.key.size = unit(0.5, "cm"),
+          plot.title = element_text(color = "#184b44",
+                                    family = "Merriweather Sans",
+                                    size = 18,
+                                    hjust = 0.5),
           axis.text = element_blank())
   
 }
 ```
 
-
 ```{r}
-library(PNWColors)
-
 pals_old <- pnw_palette("Lake", 8, type = "discrete")
 pals_new <- pnw_palette("Shuksan", 8, type = "discrete")
 
@@ -108,34 +114,29 @@ plot_new <- df_waffle %>%
 
 ```{r}
 title <- ggdraw() +
-  draw_label("Length of Books in Old and New Testaments",
+  draw_label("Length of Books in Old and New Testaments\nEach square represents 100 words",
              color = "#36413d",
-             hjust = .5,
-             size = 20)
-
-subtitle <- ggdraw() +
-  draw_label("Each square represents 100 words",
-             color = "#184b44",
-             hjust = .5,
-             size = 16)
+             fontfamily = "Anton",
+             size = 20,
+             hjust = .5) +
+  theme(plot.margin = margin(0, 0, 0, 0))
  
 caption <- ggdraw() +
   draw_label("Source: KJV | Graphic: Sung Inkyung",
              color = "#184b44",
-             hjust = .5,
-             size = 8)
+             fontfamily = "Roboto Condensed",
+             size = 12,
+             hjust = .5) +
+  theme(plot.margin = margin(0, 0, 0, 0))
 
 p <- plot_grid(title, 
-               subtitle,
                plot_old, 
                plot_new,
                caption,
                ncol = 1,
-               rel_heights = c(.15, .07, .35, .35, .03 ))
+               rel_heights = c(.15, .35, .35, .03))
 
-ggsave(plot = p,
-       filename = file.path("../day4", "day4_magical.png"),
-       dpi = 300, width = 15, height = 15, units = "cm")
+ggsave("day4_magical.png", width = 23, height = 23, units = "cm")
 
 ```
 

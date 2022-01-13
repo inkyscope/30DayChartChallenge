@@ -1,0 +1,101 @@
+---
+title: "day2 Pictogram"
+author: "Sung Inkyung"
+date: '2021 5 30'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+### Image Source[tidytuesday by gkaramanis] (https://github.com/gkaramanis/tidytuesday/blob/master/week-21/waste.R)
+```{r}
+library(tidyverse)
+library(ggtext)
+library(tidytext)
+library(ggimage)
+library(scales)
+library(here)
+library(showtext)
+
+font_add_google("Montserrat")
+font_add_google("Lato")
+font_add_google("Karla")
+
+showtext_opts(dpi = 320)
+showtext_auto(enable = T)
+
+```
+
+
+```{r}
+plastics <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-01-26/plastics.csv')
+
+```
+
+
+```{r}
+df <- plastics %>% 
+  filter(!parent_company %in% c("Grand Total", "Unbranded", "null", "NULL", "Assorted")) %>% 
+  filter(year == 2020) %>% 
+  group_by(parent_company) %>% 
+  filter(n() >= 10) %>% 
+  ungroup() %>% 
+  group_by(country) %>% 
+  mutate(total = sum(grand_total)) %>% 
+  ungroup() %>% 
+  mutate(parent_company = fct_reorder(parent_company, total)) %>% 
+  mutate(plastic = sample(c("https://cdn1.iconfinder.com/data/icons/fitness-icon-collection/100/plastic-128.png",
+                            "https://image.flaticon.com/icons/png/128/81/81940.png",
+                            "https://image.flaticon.com/icons/png/128/1758/1758890.png"),
+                          size =  nrow(.), replace = TRUE),
+                          angle = runif(nrow(.), 0, 360))
+
+```
+
+
+```{r}
+plot <- df %>% 
+  ggplot(aes(x = total,
+             y = parent_company, angle = angle)) +
+  geom_image(aes(image = plastic), color = "steelblue", 
+             size = .04) +
+  scale_x_log10() +
+  labs(title = "Comapnies With Most Plastics Collected in 2020",
+       subtitle = "Illustrated below that amount of plastics along with top 20 companies collected<br>by voluteers around world in the **Break Free from Plastic** events in 2019-2020",
+       caption = "Source:Break Free from Plastic | Graphic: Sung Inkyung") +
+  theme_minimal() +
+  theme(legend.position = "none",
+        plot.background = element_rect(fill = "#eceef7", 
+                                       colour = "#eceef7"),
+        plot.title = element_text(family = "Montserrat",
+                                  size = 22,
+                                  hjust = 0.5,
+                                  margin = margin(t = 15, b = 5)),
+        plot.subtitle = element_markdown(family = "Lato",
+                                         size = 16,
+                                         hjust = 0.5,
+                                         lineheight = 1.1,
+                                         margin = margin(b = 10)),
+        plot.caption = element_text(color = "gray45",
+                                    family = "Lato",
+                                    size = 11, 
+                                    margin = margin(t = 20)),
+        panel.grid = element_blank(),
+        panel.grid.major.x = element_line(color = "gray85", 
+                                          size = 0.3),
+        text = element_text(size = 13),
+        axis.title = element_blank(),
+        axis.text.y = element_text(family = "Karla",
+                                   hjust = 1),
+        axis.text.x = element_text(family = "Karla"),
+        axis.line.x = element_line(size = 0.5, 
+                                   color = "#101012"),
+        axis.ticks.x = element_line(color = "#101012", 
+                                    size = 0.3),
+        plot.margin = margin(10, 10, 10, 10))
+
+ggsave("day2_pictogram2.png",  width = 35, height = 24, units = "cm")
+
+```
+

@@ -16,11 +16,19 @@ library(ggtext)
 library(ggalluvial)
 library(pals)
 library(here)
+library(showtext)
+
+
+font_add_google("Oswald")
+font_add_google("Saira")
+font_add_google("Saira Condensed")
+
+
+showtext_opts(dpi = 320)
+showtext_auto(enable = TRUE)
 
 
 plastics <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-01-26/plastics.csv')
-
-
 
 
 summary_data <- plastics %>% 
@@ -34,8 +42,6 @@ summary_data <- plastics %>%
 summary_data %>% 
   filter(type == "grand_total") %>% 
   slice_max(n = 10, order_by = value)
-
-
 ```
 
 ```{r}
@@ -58,9 +64,7 @@ df_plastic <- summary_data %>%
                               "PepsiCo"
                               )) %>%
   mutate(type = str_to_upper(type))
-  
 ```
-
 
 
 ```{r}
@@ -71,12 +75,12 @@ plot <- df_plastic %>%
              fill = fct_reorder(type, value))) +
   geom_alluvium(curve_type = "sigmoid") + 
   geom_stratum(width = 1/8, 
-               size = .7,
-               color = "white") +
+               size = .4,
+               color = "gray95") +
   geom_text(stat = "stratum",
             aes(label = fct_reorder(parent_company, value)),
-            size = 4.5,
-            fontface = "bold",
+            family = "Saira Condensed",
+            size = 5,
             nudge_x = .01) +
   scale_fill_manual(values = as.vector(cols25(9)),
                     limits = c("PET", "O", "PP",
@@ -85,29 +89,35 @@ plot <- df_plastic %>%
                                "LDPE", "PVC", "PS", "HDPE")) +
   guides(fill = guide_legend(nrow = 1)) +
   labs(title = "Plastic Types by Comapnies With Most Collected in 2019-2020",
-       subtitle = "Top 6 companies are selected along with plsastic types collected by volunteers around world<br>in the **Break Free from Plastic** events in 2019-2020",
+       subtitle = "Top 6 companies are selected along with plsastic types collected by volunteers<br>around world in the **Break Free from Plastic** events in 2019-2020",
        caption = "Source:Break Free from Plastic | Graphic: Sung Inkyung",
        fill = "Plastic type") +
   coord_flip() +
   theme_void() +
   theme(legend.position = "bottom",
-        legend.title = element_text(size = 14),
-        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 14,
+                                    family = "Saira"),
+        legend.text = element_text(size = 13,
+                                   family = "Saira Condesed"),
         legend.key.size = unit(7, "mm"),
         legend.key = element_blank(),
         legend.margin = margin(t = 10),
-        plot.title = element_text(size = 24, 
+        plot.title = element_text(family = "Oswald",
+                                  size = 26, 
                                   hjust = .5,
-                                  margin = margin(b = 5)),
-        plot.subtitle = element_markdown(size = 18,
+                                  margin = margin(b = 7)),
+        plot.subtitle = element_markdown(family = "Saira",
+                                         size = 18,
                                          hjust = .5,
+                                         lineheight = 1.1,
                                          margin = margin(b = 15)),
-        plot.caption = element_text(size = 13,
+        plot.caption = element_text(family = "Saira Condensed",
+                                    size = 13,
                                     color = "gray45",
-                                    margin = margin(t = 25)))
+                                    hjust = 0.94,
+                                    margin = margin(t = 25)),
+        plot.margin = margin(10, 10, 10, 10))
 
-ggsave(plot = plot,
-       filename = file.path("../day27", "day27_educational.png"),
-       dpi = 300, width = 40, height = 25, units = "cm")
+ggsave( "day27_educational.png", dpi = 300, width = 40, height = 27, units = "cm")
 ```
 

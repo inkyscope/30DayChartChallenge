@@ -13,6 +13,16 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(ggdist)
 library(ggtext)
+library(showtext)
+
+font_add_google("Antonio")
+font_add_google("Fira Sans")
+font_add_google("Fira Sans Condensed")
+font_add_google("Anton")
+
+showtext_opts(dpi = 320)
+showtext_auto(enable = TRUE)
+
 ```
 
 
@@ -75,6 +85,7 @@ plot_ramen <- df_ramen %>%
                 y = y - .11,
                 label = glue::glue("{round(med, 1)} points")),
             color = "gray20",
+            family = "Fira Sans Condensed",
             size = 3.5,
             vjust = 1, 
             hjust = 0) +
@@ -88,6 +99,7 @@ plot_ramen <- df_ramen %>%
                 y = y - .11,
                 label = glue::glue("{round(min, 1)} points")),
             color = "#646570",
+            family = "Fira Sans Condensed",
             size = 3.5,
             vjust = 1, 
             hjust = 0) +
@@ -102,17 +114,23 @@ plot_ramen <- df_ramen %>%
   theme_minimal() +
   theme(plot.background = element_rect(fill = "#f7f4ed",
                                        color = NA),
-       panel.grid = element_blank(),
-       plot.title = element_text(size = 24,
-                                 margin = margin(t = 10, b = 7)),
-       plot.subtitle = element_text(size = 16,
-                                    margin = margin(b = 25)),
-       plot.caption = element_text(size = 9,
-                                   margin = margin(t = 20, b= 10)),
-       axis.title = element_blank(),
-       axis.text = element_blank())
+        panel.grid = element_blank(),
+        plot.title = element_text(size = 34,
+                                  family = "Antonio",
+                                  hjust = 0.5,
+                                  margin = margin(t = 15, b = 7)),
+        plot.subtitle = element_text(size = 21,
+                                     hjust = 0.5,
+                                     family = "Fira Sans",
+                                     margin = margin(b = 20)),
+        plot.caption = element_text(size = 12,
+                                    family = "Fira Sans condensed",
+                                    hjust = .925,
+                                    margin = margin(t = 20, b= 10)),
+        axis.title = element_blank(),
+        axis.text = element_blank())
 
-ggsave(here::here("day9", "day9_Statistics.png"), width = 28, height = 24, units = "cm")
+ggsave("day9_Statistics.png", width = 28, height = 30, units = "cm")
 ```
 
 

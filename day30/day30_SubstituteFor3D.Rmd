@@ -13,14 +13,19 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(ggfx)
 library(patchwork)
+library(showtext)
+
+font_add_google("Rajdhani")
+
+showtext_opts(dpi = 320)
+showtext_auto(enable = TRUE)
 ```
 
 
 ```{r}
 allCategories <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-03-30/allCategories.csv')
+
 allShades <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-03-30/allShades.csv')
-
-
 ```
 
 
@@ -42,7 +47,8 @@ df %>%
   scale_y_continuous(limits = c(.1, .9)) +
   #coord_polar() +
   theme_void() +
-  theme(plot.background = element_rect(fill = "black"))
+  theme(plot.background = element_rect(fill = "black",
+                                       color = NA))
  
  plot_polar <- df %>% 
   ggplot(aes(sat, lightness, col = hex)) +
@@ -58,15 +64,23 @@ df %>%
  plot + plot_annotation(title = "Makeup Shades",
                         subtitle = "6254 hex colors from 328 cosmetic products out of 107 foundation brands",
                         caption = "Source: The Pudding Data | Graphic: Sung Inkyung") &
-   theme(plot.background = element_rect(fill = "black"),
-         plot.title = element_text(size = 20, 
-                                   color = "white"),
-         plot.subtitle = element_text(size = 14, 
-                                   color = "white",
-                                   margin = margin(b = 15)),
-         plot.caption = element_text(size = 8,
-                                     color = "white"))
+   theme(plot.background = element_rect(fill = "black",
+                                        color = NA),
+         plot.title = element_text(color = "white",
+                                   size = 20, 
+                                   family = "Rajdhani",
+                                   hjust = 0.5,
+                                   margin = margin(t = 10, b = 7)),
+         plot.subtitle = element_text(color = "white",
+                                      family = "Rajdhani",
+                                      size = 14, 
+                                      hjust = 0.5,
+                                      margin = margin(b = 15)),
+         plot.caption = element_text(color = "white",
+                                     size = 8,
+                                     family = "Rajdhani",
+                                     hjust = 0.5))
  
- ggsave(here::here("day30", "day30_SubstituteFor3D.png"), dpi = 300, width = 20, height = 16, units = "cm")
+ ggsave("day30_SubstituteFor3D.png", dpi = 300, width = 20, height = 16, units = "cm")
 ```
 

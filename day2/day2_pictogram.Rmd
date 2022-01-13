@@ -13,8 +13,17 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(ggtext)
 library(tidytext)
+library(scales)
 library(ggimage)
 library(here)
+library(showtext)
+
+font_add_google("Montserrat")
+font_add_google("Lato")
+font_add_google("Karla")
+
+showtext_opts(dpi = 320)
+showtext_auto(enable = T)
 ```
 
 
@@ -55,37 +64,45 @@ plot <- df %>%
          angle = angle) +
   geom_image(aes(image = plastic), color = "steelblue", 
              size = .04) +
-  scale_x_continuous(limits = c(0, 30000),
-                     breaks = seq(0, 30000, 5000),
-                     expand = c(0, 0)) +
-  labs(title = "Plastic Types by Comapnies With Most Collected in 2019-2020",
-       subtitle = "Illustrated below that amount of plastics along with top 20 companies collected by voluteers around world<br>in the **Break Free from Plastic** events in 2019-2020",
+  scale_x_continuous(limits = c(0, 31000),
+                     breaks = seq(0, 31000, 5000),
+                     expand = c(0, 0),
+                     labels = comma_format()) +
+  labs(title = "Comapnies With Most Plastics Collected in 2019-2020",
+       subtitle = "Illustrated below that amount of plastics along with top 20 companies collected<br>by voluteers around world in the **Break Free from Plastic** events in 2019-2020",
        caption = "Source:Break Free from Plastic | Graphic: Sung Inkyung") +
   theme_minimal() +
   theme(legend.position = "none",
         plot.background = element_rect(fill = "#eceef7", 
                                        colour = "#eceef7"),
-        plot.title = element_text(size = 18,
-                                  margin = margin(b = 5)),
-        plot.subtitle = element_markdown(size = 12,
-                                         margin = margin(b = 15)),
-        plot.caption = element_text(size = 9,
-                                    color = "gray45",
+        plot.title = element_text(family = "Montserrat",
+                                  size = 22,
+                                  hjust = 0.5,
+                                  margin = margin(t = 15, b = 5)),
+        plot.subtitle = element_markdown(family = "Lato",
+                                         size = 16,
+                                         hjust = 0.5,
+                                         lineheight = 1.1,
+                                         margin = margin(b = 10)),
+        plot.caption = element_text(color = "gray45",
+                                    family = "Lato",
+                                    size = 11, 
                                     margin = margin(t = 20)),
         panel.grid = element_blank(),
-        text = element_text(size = 11),
+        text = element_text(size = 13),
         axis.line.x = element_line(size = 0.5, 
                                    color = "#101012"),
         axis.ticks.x = element_line(color = "#101012", 
                                     size = 0.3),
-        axis.text.y = element_text(hjust = 1),
-         panel.grid.major.x = element_line(color = "gray85", 
-                                          size = 0.3),
         axis.title = element_blank(),
-        plot.margin = unit(c(1, 1, 1, 0.6), "cm"))
+        axis.text.y = element_text(family = "Karla",
+                                   hjust = 1),
+        axis.text.x = element_text(family = "Karla"),
+        panel.grid.major.x = element_line(color = "gray85", 
+                                          size = 0.3),
+        plot.margin = margin(10, 10, 10, 10))
 
-ggsave(here::here("day2", "day2_pictogram.png"),
-       dpi = 300, width = 31, height = 24, units = "cm")
+ggsave("day2_pictogram.png", width = 35, height = 24, units = "cm")
 
 ```
 

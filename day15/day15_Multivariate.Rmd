@@ -12,6 +12,15 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(tidyverse)
 library(ggbeeswarm)
+library(showtext)
+
+font_add_google("Antonio")
+font_add_google("Fira Sans")
+font_add_google("Fira Sans Condensed")
+font_add_google("Anton")
+
+showtext_opts(dpi = 320)
+showtext_auto(enable = TRUE)
 ```
 
 
@@ -62,23 +71,24 @@ plot <- ramen %>%
   theme_light() +
   theme(strip.background = element_rect(fill = "#d4383e",
                                         color = NA),
-        strip.text = element_text(size = 14,
-                                   face = "bold"),
-        plot.title = element_text(size = 20),
-        plot.subtitle = element_text(size = 15,
+        strip.text = element_text(size = 12,
+                                  family = "Anton"),
+        plot.title = element_text(size = 20,
+                                  family = "Antonio"),
+        plot.subtitle = element_text(size = 16,
+                                     family = "Fira Sans",
                                      margin = margin(b = 10)),
-        plot.caption = element_text(size = 10),
+        plot.caption = element_text(size = 10,
+                                    family = "Fira Sans"),
         axis.title = element_blank(),
         axis.text = element_text(color = "gray45",
-                                 face = "bold",
+                                 family = "Fira Sans Condensed",
                                  size = 11),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.spacing = unit(.7, "lines"))
 
-ggsave(here::here("day15", "day15_Multivarate.png"), dpi = 300, width = 30, height = 24, units = "cm")
-
-  
+ggsave("day15_Multivarate.png", dpi = 300, width = 30, height = 24, units = "cm")
 ```
 
 

@@ -1,0 +1,123 @@
+---
+title: "day22 Animation"
+author: "Sung Inkyung"
+date: '2022 1 15 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(countrycode)
+library(ggthemes)
+library(gganimate)
+library(showtext)
+
+font_add_google("Cairo")
+font_add_google("IBM Plex Sans")
+font_add_google("PT Sans Narrow")
+
+showtext_auto()
+```
+
+
+```{r}
+water <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-05-04/water.csv') %>% 
+  filter(install_year <= 2021,
+         install_year >= 2010,
+         !is.na(install_year)) 
+
+df <- water %>% 
+  select(row_id, country = country_name, source = water_source, lon = lon_deg, lat = lat_deg, year = install_year) %>% 
+  filter(!is.na(country),
+         !is.na(source)) %>% 
+  mutate(source = case_when(
+    str_detect(source, "Protected") ~ "Protected Water",
+    str_detect(source, "Unprotected") ~"Unprotected Water",
+    str_detect(source, "Undefined") ~ "Undefined",
+    str_detect(source, "Delivered") ~ "Delivered / Packaged Water",
+    str_detect(source, "Packaged") ~ "Delivered / Packaged Water",
+    str_detect(source, "Surface") ~ "Surface Water",
+    str_detect(source, "surface") ~ "Surface Water",
+    TRUE ~ source
+  )) %>% 
+  filter(between(lon, -30, 51), between(lat, -40, 40))
+
+```
+``
+
+```{r}
+pals <- c("Undefined" = "#800000",
+          "Surface Water" = "#d426bd",
+          "Unprotected Water" = "#ff5733",
+          "Rainwater Harvesting" = "#fdbe02",
+          "Borehole" = "#86faf2", 
+          "Protected Water" = "#30e7ed",
+          "Piped Water" = "#00a6d7",
+          "Delivered / Packaged Water" = "#0058b3")
+```
+
+
+```{r}
+df_africa <- map_data("world") %>%
+  as_tibble() %>%
+  mutate(continent = countrycode(region, 
+                                 origin = "country.name",
+                                 destination = "continent")) %>%
+  filter(continent == "Africa")
+
+```
+
+```{r}
+plot <- df %>% 
+  filter(source %in%c("Borehole", "Protected Water", "Piped Water")) %>% 
+  ggplot(aes(lon, lat, group = country, color = source)) +
+  geom_polygon(data = df_africa,
+               aes(x = long, y = lat, group = group),
+               fill = "#faebd7",
+               color = "#db9370") +
+  geom_point(size = 1.2, alpha = .7) +
+  scale_color_manual(values = c("Borehole" = "#10425c", 
+                                "Protected Water" = "#d426bd",
+                                "Piped Water" = "#fdc200"),
+                    name = "") +
+  guides(color = guide_legend(override.aes = list(size = 5),
+                              title = "Water sources",
+                              title.hjust = 0.5)) +
+  coord_map() +
+  theme_map() +
+  transition_reveal(along = year,
+                    range = c(2010, 2021)) +
+  labs(title = "Installed Year\n{round(frame_along, 0)}",
+       caption = "Scource: Water Point Data Exchange WPDx\nGraphic: Sung Inkyung") +
+  theme(legend.position = c(0.12, 0.25),
+        legend.text = element_text(family = "IBM Plex Sans",
+                                   size = 8),
+        legend.background = element_rect(fill = "#afeeee",
+                                       color = NA),
+        legend.key = element_rect(fill = "#afeeee",
+                                       color = NA),
+        plot.background = element_rect(fill = "#afeeee",
+                                       color = NA),
+        plot.title = element_text(family = "Cairo",
+                                  size = 24,
+                                  face = "bold",
+                                  hjust = 0.5,
+                                  lineheight = 1.2,
+                                  margin = margin(t = 20, b = 15)),
+        plot.caption = element_text(color = "gray35",
+                                    family = "PT Sans Narrow",
+                                    size = 9, 
+                                    hjust = 0.95),
+        plot.margin = margin(10, 10, 10, 10))
+
+
+animate(plot, start_pause = 15, end_pause = 15, width = 500, height = 500, units = "px")
+
+anim_save("day22_WaterSources_Africa.gif")
+```
+

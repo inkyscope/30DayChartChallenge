@@ -1,0 +1,116 @@
+---
+title: "Water sources in Africa"
+author: "Sung Inkyung"
+date: '2022 1 15'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(showtext)
+
+font_add_google("Cairo")
+font_add_google("IBM Plex Sans")
+font_add_google("PT Sans Narrow")
+
+showtext_opts(dpi = 320)
+showtext_auto()
+```
+
+
+```{r}
+water <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-05-04/water.csv') %>% 
+  select(row_id, country = country_name, source = water_source)
+  
+```
+
+
+```{r}
+df <- water %>% 
+  filter(!is.na(country),
+         !is.na(source)) %>% 
+  mutate(source = case_when(
+    str_detect(source, "Protected") ~ "Protected Water",
+    str_detect(source, "Unprotected") ~"Unprotected Water",
+    str_detect(source, "Undefined") ~ "Undefined",
+    str_detect(source, "Delivered") ~ "Delivered / Packaged Water",
+    str_detect(source, "Packaged") ~ "Delivered / Packaged Water",
+    str_detect(source, "Surface") ~ "Surface Water",
+    str_detect(source, "surface") ~ "Surface Water",
+    TRUE ~ source
+  )) 
+
+df %>% 
+  count(country, sort = T)
+
+df_sources <- df %>% 
+  count(country, source) %>% 
+  group_by(country) %>% 
+  mutate(prc = n / sum(n),
+         prc = round(prc, 2)) %>% 
+  ungroup() %>% 
+  arrange(desc(prc)) 
+
+```
+
+```{r}
+pals <- c("Undefined" = "#800000",
+          "Surface Water" = "#d426bd",
+          "Unprotected Water" = "#ff5733",
+          "Rainwater Harvesting" = "#fdbe02",
+          "Borehole" = "#86faf2", 
+          "Protected Water" = "#30e7ed",
+          "Piped Water" = "#00a6d7",
+          "Delivered / Packaged Water" = "#0058b3")
+```
+
+
+```{r}
+plot <- df_sources %>% 
+  ggplot(aes(8, prc, fill = source)) +
+  geom_col(position = "stack", alpha = 1) +
+  scale_fill_manual(values = pals,
+                    name = "") +
+  scale_x_continuous(limits = c(0, 8.5),
+                     expand = c(0, 0)) +
+  guides(fill = guide_legend(nrow = 2, byrow = TRUE)) +
+  annotate("rect",
+           xmin = 0, xmax = 7.5, 
+           ymin = 0, ymax = 1, 
+           fill = "#cc9966") +
+  coord_polar(theta = "y") +
+  facet_wrap(~ country) +
+  labs(title = "A F R I C A\nWATER ACESS SOURCES\nTO BE DOWNWARDS",
+       caption = "Scource: Water Point Data Exchange WPDx | Graphic: Sung Inkyung") +
+  theme_void() +
+  theme(legend.position = c(0.69, 0.09),
+        legend.key.size = unit(2, "mm"),
+        legend.text = element_text(family = "IBM Plex Sans",
+                                   size = 6),
+        plot.background = element_rect(fill = "#faebd7",
+                                       color = NA),
+        plot.title = element_text(color = "#077ccc",
+                                  family = "Cairo",
+                                  size = 16,
+                                  face = "bold",
+                                  hjust = 0.5, 
+                                  lineheight = 0.9,
+                                  margin = margin(b = 13)),
+        plot.caption = element_text(color = "gray45",
+                                    family = "PT Sans Narrow",
+                                    size = 7, 
+                                    hjust = 0.5, 
+                                    margin = margin(t = 10)),
+        strip.text.x = element_text(family = "Cairo",
+                                    size = 5),
+        panel.spacing = unit(0.5, "lines"),
+        plot.margin = margin(10, 10, 10, 10))
+
+
+ggsave("WaterAcess_Africa.png", width = 15, height = 18, units ="cm")
+```

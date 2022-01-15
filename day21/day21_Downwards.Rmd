@@ -107,10 +107,10 @@ plot <- df_sources %>%
                                     hjust = 0.5, 
                                     margin = margin(t = 10)),
         strip.text.x = element_text(family = "Cairo",
-                                    size = 5),
-        panel.spacing = unit(0.5, "lines"),
+                                    size = 5.5),
+        panel.spacing = unit(0.4, "lines"),
         plot.margin = margin(10, 10, 10, 10))
 
 
-ggsave("WaterAcess_Africa.png", width = 15, height = 18, units ="cm")
+ggsave("day21_Downwards.png", width = 15, height = 18, units ="cm")
 ```

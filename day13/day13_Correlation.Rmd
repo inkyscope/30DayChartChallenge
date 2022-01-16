@@ -1,5 +1,5 @@
 ---
-title: "day6_experimental"
+title: "day13_Correlation"
 author: "Sung Inkyung"
 date: '2021 11 1'
 output: html_document
@@ -112,7 +112,7 @@ plot_bump <- df %>%
   scale_y_continuous(limits = c(0, 400),
                      breaks = seq(0, 400, 50),
                      expand = c(0.01, 0.01)) +
-  scale_color_paletteer_d("futurevisions::grand_tour") +
+  scale_color_paletteer_d("futurevisions::grand_tour") + #paletteer_d("futurevisions::grand_tour")
   labs(x = "",
        y = "Total Monthly Walking Stairs",
        title = "<span style = 'color: #418D87FF'> **2 0 1 5**</span> <span style = 'color: gray90'>**-**</span><span style = 'color: #F6EBD1FF'> **2 0 2 1**</span>",
@@ -149,12 +149,6 @@ plot_bump <- df %>%
                                          margin = margin(r = 10)),
         plot.margin = margin(10, 20, 10, 20))
 
-ggsave("day6_experimental.png", width = 50, height = 22, units = "cm")
+ggsave("day13_Correlation.png", width = 50, height = 22, units = "cm")
  
 ```
-
-```{r}
-paletteer_d("futurevisions::grand_tour")
-
-```
-

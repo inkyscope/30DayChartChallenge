@@ -1,7 +1,7 @@
 ---
 title: "day22 Animation"
 author: "Sung Inkyung"
-date: '2022 1 15 '
+date: '2022 1 15'
 output: html_document
 ---
 
@@ -21,7 +21,9 @@ font_add_google("Cairo")
 font_add_google("IBM Plex Sans")
 font_add_google("PT Sans Narrow")
 
+showtext_opts(dpi = 320)
 showtext_auto()
+
 ```
 
 
@@ -48,19 +50,6 @@ df <- water %>%
   filter(between(lon, -30, 51), between(lat, -40, 40))
 
 ```
-``
-
-```{r}
-pals <- c("Undefined" = "#800000",
-          "Surface Water" = "#d426bd",
-          "Unprotected Water" = "#ff5733",
-          "Rainwater Harvesting" = "#fdbe02",
-          "Borehole" = "#86faf2", 
-          "Protected Water" = "#30e7ed",
-          "Piped Water" = "#00a6d7",
-          "Delivered / Packaged Water" = "#0058b3")
-```
-
 
 ```{r}
 df_africa <- map_data("world") %>%
@@ -86,17 +75,19 @@ plot <- df %>%
                                 "Piped Water" = "#fdc200"),
                     name = "") +
   guides(color = guide_legend(override.aes = list(size = 5),
-                              title = "Water sources",
-                              title.hjust = 0.5)) +
+                              title = "Water sources")) +
   coord_map() +
   theme_map() +
   transition_reveal(along = year,
                     range = c(2010, 2021)) +
-  labs(title = "Installed Year\n{round(frame_along, 0)}",
-       caption = "Scource: Water Point Data Exchange WPDx\nGraphic: Sung Inkyung") +
-  theme(legend.position = c(0.12, 0.25),
+  labs(title = "Installed Year {round(frame_along, 0)}",
+       caption = "Source: WPDx | Graphic: Sung Inkyung") +
+  theme(legend.position = c(0.12, 0.3),
+        legend.title = element_text(family = "IBM Plex Sans",
+                                    size = 5),
+        legend.title.align = 0.5,
         legend.text = element_text(family = "IBM Plex Sans",
-                                   size = 8),
+                                   size = 4),
         legend.background = element_rect(fill = "#afeeee",
                                        color = NA),
         legend.key = element_rect(fill = "#afeeee",
@@ -104,19 +95,19 @@ plot <- df %>%
         plot.background = element_rect(fill = "#afeeee",
                                        color = NA),
         plot.title = element_text(family = "Cairo",
-                                  size = 24,
+                                  size = 11,
                                   face = "bold",
                                   hjust = 0.5,
-                                  lineheight = 1.2,
                                   margin = margin(t = 20, b = 15)),
         plot.caption = element_text(color = "gray35",
                                     family = "PT Sans Narrow",
-                                    size = 9, 
-                                    hjust = 0.95),
-        plot.margin = margin(10, 10, 10, 10))
+                                    size = 4, 
+                                    hjust = 0.95,
+                                    margin = margin(t = 10)),
+        plot.margin = margin(15, 10, 15, 10))
 
 
-animate(plot, start_pause = 15, end_pause = 15, width = 500, height = 500, units = "px")
+animate(plot, start_pause = 10, end_pause = 15, width = 800, height = 800, units = "px")
 
 anim_save("day22_WaterSources_Africa.gif")
 ```

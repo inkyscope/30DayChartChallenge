@@ -1,0 +1,152 @@
+---
+title: "day6 Experimental"
+author: "Sung Inkyung"
+date: '2022 1 17'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+### Source[Recreating the New York Times COVID-19 Spiral Graph](https://bydata.github.io/nyt-corona-spiral-chart/)
+```{r}
+library(tidyverse)
+library(ggtext)
+library(lubridate)
+library(patchwork)
+library(showtext)
+
+font_add_google("Rajdhani")
+font_add_google("Fira Sans Condensed")
+
+showtext_opts(dpi = 320)
+showtext_auto()
+
+```
+
+
+```{r}
+covid_url <- read_csv("https://github.com/owid/covid-19-data/blob/master/public/data/owid-covid-data.csv?raw=true")
+
+covid_cases <- covid_url %>% 
+  filter(location == "Indonesia") %>% 
+  select(date, new_cases, new_cases_smoothed) %>% 
+  arrange(date) %>% 
+  # Add the dates before the 1st confirmed case
+  add_row(date = as_date("2020-01-01"), new_cases = 0, new_cases_smoothed = 0,
+          .before = 1) %>% 
+  complete(date = seq(min(.$date), max(.$date), by = 1),
+           fill = list(new_cases = 0, new_cases_smoothed = 0)) %>% 
+  mutate(day_of_year = yday(date),
+         year = year(date))
+
+```
+
+```{r}
+size_factor <- 700
+
+# Grid lines
+month_length <- c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+month_breaks <- cumsum(month_length) - 30
+
+subtitle_date <- max(covid_cases$date) %>% 
+  format("%b. %d. %Y")
+
+# year 2020:2022
+year_annotations <- list(year = 2020:2022,
+                         x = rep(3,3),
+                         y = as.POSIXct(paste(2020:2022, "01", "01", sep = "-")))
+```
+
+
+```{r}
+plot <- covid_cases %>% 
+  filter(date != as_date("2020-2-29")) %>% 
+  group_by(year) %>% 
+  mutate(day_of_year = row_number()) %>% 
+  ungroup() %>% 
+  ggplot() +
+  # area to encode the number of steps
+  geom_ribbon(aes(x = day_of_year,
+                  ymin = as.POSIXct(date) - new_cases_smoothed / 2  * size_factor,
+                  ymax = as.POSIXct(date) + new_cases_smoothed / 2 * size_factor,
+                  group = year),
+              size = 0.7, fill = "#a73062", color = "#a73062",  show.legend = FALSE) +
+  # basic line
+  geom_segment(aes(x = day_of_year, xend = day_of_year + 1,
+                   y = as.POSIXct(date), yend = as.POSIXct(date)),
+               color = "#3a3637", size = 0.3) +
+  # annotation: 7day average
+  annotate("richtext",
+           label = "7 day average",
+           x = 26, y = as.POSIXct("2021-08-01"),
+           family = "Fira Sans Condensed", 
+           size = 5, color = "#121212",
+           label.color = NA, fill = NA) +
+  annotate("segment",
+           x = 20, xend = 22.5, 
+           y = as.POSIXct("2021-06-01"), yend = as.POSIXct("2021-03-15"),
+           color = "#121212", size = 0.7) +
+  # annotation: years
+  annotate("text",
+           label = paste0(year_annotations$year, "\u2192"), #right arrow
+           x = year_annotations$x, 
+           y = year_annotations$y,
+           family = "Fira Sans Condensed",
+           size = 7, face = "bold", vjust = -0.6, hjust = 0.15) +
+  scale_x_continuous(minor_breaks = month_breaks,
+                     breaks = month_breaks[c(1, 4, 7, 10)],
+                     labels = c("Jan", "April", "July", "Oct")) +
+  labs(subtitle = subtitle_date) +
+  coord_polar() +
+  theme_void() +
+  theme(plot.background = element_rect(fill = "white",
+                                       color = NA),
+        panel.grid.major.x = element_line(color = "gray70",
+                                          size = 0.4, 
+                                          linetype = "dotted"),
+        panel.grid.minor.x = element_line(color = "gray70",
+                                          size = 0.4, 
+                                          linetype = "dotted"),
+        plot.subtitle = element_text(family = "Rajdhani",
+                                     size = 30, 
+                                     hjust = 0.5),
+        axis.text.x = element_text(color = "#3a3637",
+                                   family = "Rajdhani",
+                                   size = 17, 
+                                   hjust = 0.5))
+
+```
+
+```{r}
+p_legend <- tibble(
+  cases = c(0, 150000),
+  ymin = c(0, -75000),
+  ymax = c(0, 75000)
+) %>% 
+  ggplot(aes(cases)) +
+  geom_ribbon(aes(ymin = 65 * ymin, 
+                  ymax = 65 * ymax),
+              color = "#a73062", fill = "#a73062", size = 0.3) +
+  geom_line(aes(y = 1), color = "#3a3637") +
+  geom_text(aes(label = ifelse(cases == 0, 0, "150k cases"),
+                y = 1, hjust = ifelse(cases == 0, 1.5, -0.1)),
+            size = 5) +
+  coord_cartesian(xlim = c(0, 350000),
+                  ylim = c(-as.numeric(as.POSIXct("1971-01-01")), NA),
+                  clip = "off") +
+  labs(title = "New Covid-19<br>INDONESIA") +
+  theme_void() +
+  theme(plot.title = element_markdown(color = "#121212",
+                                      family = "Rajdhani",
+                                      face = "bold",
+                                      size = 13, 
+                                      hjust = 0.5, 
+                                      lineheight = 1.1))
+
+#ragg::agg_png("plots", "day6_Experimental.png", res = 300, width = 1200, height = 1450, units = "px")
+plot_final <- plot + inset_element(p_legend, left = 0.05, bottom = 0.725, right = 0.25, top = 0.95)
+
+ggsave("day6_Experimental.png", width = 30, height = 30, units = "cm")
+```
+

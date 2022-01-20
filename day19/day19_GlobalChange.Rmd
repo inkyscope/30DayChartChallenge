@@ -1,0 +1,214 @@
+---
+title: "day19 Global change"
+author: "Sung Inkyung"
+date: '2022 1 18'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+### Source[30Day Chart Challenge by Leeolney](https://gist.github.com/leeolney3/38ca57b5c838594dc74fdcae43ecd0f8)
+### Source[gt by Benjamin Nowak](https://github.com/BjnNowak/CultivatedPlanet/blob/main/Scripts/SC_Walkthrough_CultivatedPlanet.R)
+```{r replicate @leeolney's approach}
+library(tidyverse)
+library(lubridate)
+library(sf)
+library(gt)
+library(gtExtras)
+
+library(showtext)
+
+font_add_google("Baumans")
+font_add_google("Assistant")
+
+showtext_opts(dpi = 320)
+showtext_auto()
+```
+
+
+```{r}
+disasters <- read_csv("C:/Users/inkyscope/Documents/projectR/30DayChartChallenge/day19/data/IDMC_GIDD_disasters_internal_displacement_data_2020-1642581220428.csv") %>% 
+  janitor::clean_names() %>% 
+  rename(country = country_territory)
+
+```
+
+
+```{r}
+# dates
+df <- disasters %>% 
+  mutate(date = str_sub(date_of_event_start, 1, 10),
+         date = ymd(date),
+         mth_yr = format_ISO8601(date, precision = "ym"))
+
+  range(df$date)
+  
+  type <- df %>% 
+    group_by(hazard_type) %>% 
+    summarise(n = n_distinct(year)) %>% 
+    arrange(desc(n)) %>% 
+    filter(n == 13) %>% 
+    pull(hazard_type)
+  
+# base df for table
+  
+  df_new <- df %>% 
+    filter(hazard_category == "Weather related",
+           hazard_type %in% type)
+  
+  base <- df_new %>% 
+    group_by(hazard_type) %>% 
+    summarise(event_n = n(),
+              displaced_n = sum(disaster_new_displacements),
+              country_n = n_distinct(country))
+```
+
+
+```{r Line plot}
+# Line plot
+
+data <- df_new %>% 
+  group_by(year, hazard_type) %>%
+  summarise(disp = sum(disaster_new_displacements),
+            ev = n_distinct(date)) %>%
+  ungroup() %>% 
+  group_by(hazard_type) %>% 
+  arrange(year, .by_group = T) %>% 
+  mutate(event = ev/max(ev),
+         displacement = disp/max(disp)) %>% 
+  select(-c(disp, ev)) %>% 
+  pivot_longer(!c(year, hazard_type))
+```
+
+
+```{r Line plot}
+#line plot function
+fun_plot <- function(data){
+  trend <- ggplot(data,
+                  aes(x = year, y = value, color = name)) +
+    geom_point(size = 7) +
+    geom_line(size = 3) +
+    scale_x_continuous(breaks = c(2012, 2016)) +
+    scale_y_continuous(breaks = c(0, 0.5, 1),
+                       labels = scales::percent) +
+    coord_cartesian(clip = "off") +
+    scale_color_manual(values = c("event" = "#5a7a7f",
+                                  "displacement" = "#bb0000"),
+                       guide = "none") +
+    theme_minimal() +
+    theme(legend.position = "none",
+          axis.title = element_blank())
+  
+  return(trend)
+}
+
+plot_line <- data %>% 
+  group_by(hazard_type) %>% 
+  nest() %>% 
+  mutate(gg = map(data, fun_plot)) %>% 
+  select(hazard_type = hazard_type, gg)
+```
+
+```{r World map df}
+# prepare worldmap
+
+states <- st_as_sf(maps::map(database = "world",
+                             plot = F,
+                             fill = T)) %>% 
+  rename(country = ID) %>% 
+  filter(!country %in% c("Antarctica", "Greenland", "French Southern and Antarctic Lands"))
+  
+ df_country <-  df_new %>% 
+    count(iso3, country, hazard_type) %>% 
+    mutate(country = case_when(
+      country == "Dem. People's Rep. Korea" ~ "North Korea",
+      country == "Taiwan, China" ~ "Taiwan",
+      TRUE ~ country))
+  
+df_map <- left_join(states, df_country, by = "country")
+
+```
+
+```{r word map}
+# world map function
+world_map <- function(data){
+  p1 <- ggplot() +
+    geom_sf(data = states, size = 0.2) +
+    geom_sf(data = df_map %>% 
+              filter(hazard_type == data), #?
+            aes(fill = n),
+            size = .2) +
+    rcartocolor::scale_fill_carto_c(palette = "SunsetDark",
+                                    direction = 1) +
+    theme_void() +
+    theme(legend.position = "none")
+  
+  return(p1)
+}
+
+plot_map <- data %>% 
+  group_by(hazard_type) %>% 
+  nest() %>% 
+  mutate(plot = map(hazard_type, world_map)) %>% 
+  select(hazard_type, plot)
+```
+
+```{r table}
+
+table <- base %>% 
+  mutate(plot = NA,
+         world = NA) %>% 
+  select(hazard_type, event_n, displaced_n, plot, country_n, world) %>% 
+  gt() %>% 
+  gt_theme_nytimes() %>% 
+  #add line plot
+  text_transform(
+    locations = cells_body(columns = plot),
+    fn = function(x){
+      map(plot_line$gg, ggplot_image,
+          height = px(90), aspect_ratio = 1.6)
+    }
+  ) %>% 
+  # add world map
+  text_transform(
+    locations = cells_body(columns = world),
+    fn = function(x){
+      map(plot_map$plot, ggplot_image,
+          height = px(100), aspect_ratio = 2)
+    }
+  ) %>% 
+  #columns
+  cols_label(
+    hazard_type = "Harzard type",
+    event_n = "Events",
+    displaced_n = "New displacements",
+    plot = gt::html("Yearly total<br>relative to peak<br><span style='color:#5a7a7f'>Event</span> | <span style='color:#bb0000'>Displacement</span>"),
+    country_n = "Frequency of country",
+    world = html("Events by country")
+  ) %>% 
+  fmt_number(columns = c("event_n", "displaced_n"), decimals = 0) %>% 
+  cols_align(columns = c("event_n", "displaced_n", "country_n"), align = "center") %>% 
+  #labels
+  tab_header(
+    title = html("<span style = 'font-family:Baumans;color:#bb0000'>Weather Disaster Events and Displacements (2008-2020)</span>"),
+    subtitle = md("Events reported and new displacements as a result of **FLOOD, STORM, WET MASS MOVEMENT and WILDFIRE**,<br>from Jan 1, 2008 to Dec 31, 2020, according to IDMC.")) %>%
+  tab_source_note(source_note = html("<span style = 'font-family:Assistant'>Data source: Internal Displacement Monitoring Center (IMDC)<br>Credit: Lee Olney</span>")
+  ) %>% 
+  tab_footnote(
+    footnote = md("*Hazard type represent the main hazard that triggered displacement*"),
+    locations = cells_column_labels("hazard_type")
+  ) %>%
+  tab_footnote(
+    footnote = md("*New displacements correspond to the estimated number of internal displacements over a given period of time (reporting year). Figures may include individuals who have been displaced more than once.*"),
+    locations = cells_column_labels("displaced_n")
+  ) %>%
+  tab_options(source_notes.font.size = "13px",
+              footnotes.font.size = "12px") 
+
+library(webshot)
+gtsave_extra(table, "day19_GlobalChange.png",  zoom = 2, expand = 5)
+
+
+```
+

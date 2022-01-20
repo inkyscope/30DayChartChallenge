@@ -1,0 +1,79 @@
+---
+title: "w1_Step Counts by Weekdays"
+author: "Sung Inkyung"
+date: '2022 1 18'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(ggtext)
+library(ggridges)
+library(lubridate)
+library(MetBrewer)
+library(showtext)
+
+font_add_google("Monoton", "monoton")
+font_add_google("Jost", "jost")
+
+showtext_opts(dpi = 300)
+showtext_auto(enable = TRUE)
+```
+
+
+```{r}
+df <- read.csv("C:/Users/inkyscope/Documents/projectR/30DayChartChallenge/data/inkystepcounts.csv")
+
+df_plot <- df %>% 
+  mutate(day = factor(day,levels = rev(c("Sun", "Mon", "Tue", "Wed","Thu", "Fri", "Sat")))) %>% 
+  group_by(date, day) %>% 
+  summarise(total = sum(steps))
+```
+
+
+```{r}
+plot <- ggplot(df_plot,
+               aes(x = total, y = day, fill = day)) +
+  geom_density_ridges(alpha = .4,
+                      scale = 0.7) +
+  stat_density_ridges(quantile_lines = T, quantiles = 2, 
+                      color = "#b4d6e0") +
+  scale_fill_manual(values = met.brewer("Cross")) +
+  scale_x_continuous(limits = c(0, 30000),
+                     breaks = seq(0, 25000, 5000),
+                     labels = scales::comma_format(),
+                     position = "top",
+                     expand = c(0.01, 0.03)) +
+  labs(x = "",
+       y = "",
+       title = "Step Counts by Weekdays 2016-2021",
+       caption = "Source: Personal Daily Record | Grpahic: Sung Inkyung") +
+  theme_void() +
+  theme(legend.position = "none",
+        plot.background = element_rect(fill = "gray97",
+                                       color = NA),
+        plot.title = element_text(size = 34, 
+                                  family = "monoton",
+                                  hjust = 0.5,
+                                  margin = margin(b = 15)),
+        plot.caption = element_text(size = 11,
+                                    family = "jost",
+                                    hjust = 0.98,
+                                    margin = margin(t = 15)),
+        axis.text.x.top = element_text(family = "jost",
+                                   size = 12),
+        axis.text.y = element_text(family = "jost",
+                                   size = 13),
+        axis.ticks = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(10, 10, 10, 10))
+
+ggsave("day26_StepCountsbyWeekdays.png", width = 28, height = 20, unit = "cm")
+  
+```
+

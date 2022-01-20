@@ -81,7 +81,7 @@ plot1 <- df1 %>%
         axis.ticks = element_blank(),
         plot.margin = margin(20, 20, 20, 20))
 
-ggsave("day26_PersonalStepCounts.png", width = 16, height = 12, units = "cm")
+ggsave("day26_StepCountsbyYear.png", width = 16, height = 12, units = "cm")
 ```
 
 ```{r}
@@ -133,5 +133,5 @@ plot2 <- df2 %>%
         panel.grid = element_blank(),
         plot.margin = margin(10, 10, 10, 10))
 
-ggsave("day26_PersonalStepCounts2.png", width = 15, height = 20, units = "cm")
+ggsave("day26_StepCountsbySeason.png", width = 15, height = 20, units = "cm")
 ```

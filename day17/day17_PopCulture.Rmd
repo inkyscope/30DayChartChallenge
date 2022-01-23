@@ -1,0 +1,76 @@
+---
+title: "day17 Pop Culture"
+author: "Sung Inkyung"
+date: '2022 1 23'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+### Source[FRIENDS by Elizabeth Ter Sahakyan](https://medium.com/@liztersahakyan/the-one-with-the-data-scientist-a-closer-look-at-the-friends-of-friends-d3530d1902af)
+```{r}
+library(tidyverse)
+library(tidytext)
+library(geomtextpath)
+library(cowplot)
+library(showtext)
+
+font_add_google("Gabriela")
+font_add_google("Barlow")
+showtext_opts(dpi = 320)
+showtext_auto()
+```
+
+```{r}
+friends <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-09-08/friends.csv')
+
+df_phoebe <- friends %>% 
+  filter(speaker == "Phoebe Buffay") %>% 
+  unnest_tokens(word, text) %>% 
+  anti_join(stop_words) %>% 
+  count(word, sort = T) %>% 
+  arrange(desc(n)) %>% 
+  filter(n >= 10) %>% 
+  distinct(word)
+
+theta <- seq(0, 30 * pi, by = 0.1) #by = 0.01, 0.3
+r <- 0.5 + 0.5 * theta
+x = r * cos(theta)
+y = r * sin(theta)
+
+df_plot <- data.frame(x = r * cos(theta), 
+                      y = r * sin(theta)) %>% 
+  slice(1:396) %>% 
+  bind_cols(df_phoebe)
+```
+
+
+```{r}
+plot <- ggplot(df_plot, aes(x, y, label = word)) +
+  geom_textpath(size = 4, vjust = 2, family = "Barlow", color = "#ff4238") +
+  coord_equal() + 
+  labs(title = "Phoebe Lines in Friends",
+       caption = "Graphic: Sung Inkyung") +
+  theme_void() +
+  theme(plot.background = element_rect(fill = "#42a2d6", colour = NA),
+        panel.background = element_rect(fill = "#42a2d6", colour = NA),
+        plot.title = element_text(colour = "#ffdc00",
+                                  family="Gabriela",
+                                  size=24,
+                                  face="bold",
+                                  hjust=0.5, vjust=0,
+                                  margin = margin(b = 10)),
+        plot.caption = element_text(colour = "#fff580",
+                                    family ="Gabriela",
+                                    size = 10,
+                                    hjust = 0.5, 
+                                    margin = margin(t = 15)), 
+        axis.text = element_blank(), 
+        axis.ticks = element_blank(),
+        axis.title = element_blank(),
+        plot.margin = margin(10, 10, 10, 10))
+
+
+ggsave("day17_PopCulture.png", width = 20, height = 20, units = "cm")
+```

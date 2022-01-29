@@ -1,106 +1,134 @@
 ---
-title: "day11_circular"
+title: "day11 circular"
 author: "Sung Inkyung"
-date: '2021 5 29 '
+date: '2021 1 16'
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-### Source[30DCC by emil malta] (https://github.com/emilmalta/30daychartchallenge/blob/master/script/11_circle.R)
+
 ```{r}
 library(tidyverse)
-library(tidytext)
-library(tidygraph)
-library(ggraph)
-library(ragg)
-library(here)
-```
-#paletteer::scale_colour_paletteer_d("palettetown::regice")
+library(ggnewscale)
+library(pals)
+library(showtext)
 
-pals <- c("0" = "#9370db",
-          "1" = "#c8a2c8",
-          "2" = "#b6d3e0",
-          "3" = "#213c5e",
-          "4" = "#d3f8f1",
-          "5" = "#485466",
-          "6" = "#131314",
-          "7" = "#ffffff",
-          "8" = "#fff803",
-          "9" = "#fffc8f")
+font_add_google("Teko")
+font_add_google("Poppins")
+
+showtext_opts(dpi = 320)
+showtext_auto()
+```
+
 
 ```{r}
-pi <- tibble(
-  pi = readLines("C:/Users/inkyscope/Documents/projectR/30DayChartChallenge/day11/data/pi.txt") %>% 
-    str_remove("\\.")
-)
+artwork <- read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-01-12/artwork.csv')
 
-plot_pi <- pi %>% 
-  unnest_tokens(digit, pi, "characters") %>% 
-   mutate(from = paste(digit, row_number()), to = lead(from)) %>% 
-  drop_na() %>% 
-  as_tbl_graph() %>% 
-  mutate(digit = str_sub(name, end = 1L)) %>% 
-  arrange(name)
+artists <- read_csv("https://github.com/tategallery/collection/raw/master/artist_data.csv")
+
+```
 
 
-df_pi <- pi %>% 
-  unnest_tokens(digit, pi, "characters") %>%
-  mutate(from = paste(digit, row_number()), 
-         to = lead(from)) %>% 
-  drop_na() %>% 
-  as_tbl_graph() %>% 
-  mutate(digit = str_sub(name, end = 1L)) %>% 
-  arrange(name)
+```{r}
+artwork_artist <- artwork %>% 
+  left_join(artists,by = c("artistId" = "id")) %>% 
+  select(artist,acquisitionYear, gender) %>% 
+  mutate(gender = case_when(str_detect(artist, "British") ~ "Other",
+                            str_detect(artist, "Art & Language") ~ "Male",
+                            TRUE ~ gender),
+         artist = case_when(str_detect(artist, "British") ~ "British School",
+                            TRUE ~ artist)) %>% 
+  filter(!is.na(gender)) %>% 
+  group_by(artist, acquisitionYear, gender) %>% 
+  summarise(total = n()) %>% 
+  filter(gender != "Other") %>% 
+  filter(artist != "Turner, Joseph Mallord William") %>% 
+  ungroup() %>% 
+  filter(total > 180)
 
 
+artwork_artist$fraction <-  artwork_artist$total / sum(artwork_artist$total)
 
-#paletteer::scale_colour_paletteer_d("dutchmasters::pearl_earring")
+artwork_artist$ymax <-  cumsum(artwork_artist$fraction)
+
+artwork_artist$ymin <- c(0, head(artwork_artist$ymax, n = -.5))
+```
 
 
-pals <- c("0" = "#955043",
-          "1" = "#8ea8cd",
-          "2" = "#364a7c",
-          "3" = "#fdfdfb",
-          "4" = "#c0a630",
-          "5" = "#eaae66",
-          "6" = "#080702",
-          "7" = "#7b94b7",
-          "8" = "#fce9b0",
-          "9" = "#e7dbc9")
+```{r}
+f1 = "Teko"
+f2 = "Poppins"
 
+plot <- artwork_artist %>% 
+  ggplot() + 
+  geom_rect(aes(fill = factor(acquisitionYear), 
+                ymax = ymax, 
+                ymin = ymin, 
+                xmax = 5, 
+                xmin = 4), 
+            color="white", 
+            size=.25, 
+            alpha=0.7) +
+  scale_fill_manual(values = as.vector(alphabet(8)),
+                    guide=guide_legend(title="Acquisition Year",
+                                       order=3)) +
+  new_scale_fill() +
+  geom_rect(aes(fill = artist, 
+                ymax = ymax, 
+                ymin = ymin, 
+                xmax = 4, 
+                xmin = 3), 
+            color = "white", 
+            size = .25, 
+            alpha = 0.75) +
+  scale_fill_manual(values = as.vector(tol(8)),
+                    guide=guide_legend(title="Artist", 
+                                       order = 2)) +
+  new_scale_fill() +
+  geom_rect(aes(fill = gender, 
+                ymax = ymax, 
+                ymin = ymin, 
+                xmax = 3, 
+                xmin = 2), 
+            color = "white", 
+            size = .25, 
+            alpha = 0.8) +
+  scale_fill_manual(values = c("#02122b"), ## female: "#bb0077"
+                    guide = guide_legend(title = "Gender",
+                                         order = 1)) +
+  xlim(c(0, 5)) + 
+  labs(title="Artist Artworks in Tate Musuem by Aquisition Year",
+       subtitle = "(Excluding Turner, Joseph Mallord William)",
+       caption ="Source: Tate collection | Graphic: Sung Inkyung") +
+  coord_polar(theta = "y") +
+  theme(aspect.ratio = 1,
+        legend.position = "bottom",
+        legend.direction = "vertical",
+        legend.title = element_text(family = f1,
+                                    size = 14),
+        legend.text = element_text(family = f1,
+                                   size = 16),
+        panel.background = element_blank(),
+        plot.title = element_text(family = f1,
+                                  size = 32,
+                                  face = "bold",
+                                  hjust = .5),
+        plot.subtitle = element_text(family = f2,
+                                     size = 20,
+                                     hjust = .5),
+        plot.caption = element_text(family = f1,
+                                    size = 13,
+                                    hjust = .5,
+                                    color = "gray45",
+                                    margin = margin(t = 15)),
+        panel.grid = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.margin = margin(20, 20, 20, 20))
+
+ggsave( "day11_circular.png", width = 26, height = 28, units = "cm")
   
-
-plot_pi <- df_pi %>% 
-  ggraph("linear", circular = TRUE) +
-  geom_edge_link(aes(color = digit), 
-                 alpha = .25, 
-                 show.legend = FALSE) +
-  geom_node_point(aes(color = digit), 
-                  size = 2) +
-  annotate(geom = "text", x = 0, y = -1.25, 
-           label = "pi", 
-           fontface = "italic",
-           size = 20, 
-           color = "white") +
-  scale_edge_color_manual(values = pals) +
-  scale_color_manual(values = pals) +
-  expand_limits(y = -1.5) +
-  coord_fixed() +
-  labs(color = NULL, 
-       caption = "Source: #30DayChartChallenge\nGaphic: Sung Inkyung") +
-  guides(color = guide_legend(nrow = 1, 
-                              label.position = "bottom")) +
-  theme_void() +
-  theme(
-    legend.position = "bottom", 
-    plot.background = element_rect(fill = "#231d1f", 
-                                   color = NA), 
-    plot.caption = element_text(size = 7),
-    plot.margin = margin(10,10, 10, 10),
-    text = element_text(color = "white"))
-
-ggsave(here("day11", "day11_circular.png"), dpi = 300, width = 10, height = 15, units = "cm")
 ```
 

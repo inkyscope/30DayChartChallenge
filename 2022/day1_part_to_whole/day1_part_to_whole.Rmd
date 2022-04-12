@@ -1,0 +1,106 @@
+---
+title: "day1 part to whole"
+author: "Sung Inkyung"
+date: '2022 2 8'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(gggibbous)
+library(suncalc)
+library(ggsci)
+library(showtext)
+
+font_add_google("Oswald")
+font_add_google("Fira Sans")
+
+f1 = "Oswald"
+f2 = "Fira Sans"
+
+showtext_opts(dpi = 320)
+showtext_auto()
+```
+
+```{r}
+df_moon <- tibble(
+  date = seq(ymd("2022-01-01"), ymd("2022-12-31"), by = 1),
+  month = month(date, label = TRUE),
+  moon = getMoonIllumination(date),
+  week = week(date)) 
+
+plot_year <- df_moon %>% 
+  ggplot(aes(month, y = day(date))) +
+  geom_moon(
+    aes(ratio = moon$fraction, fill = moon$fraction, 
+        right = moon$phase < .5),
+    color = "white", alpha = .8, stroke = .01, size = 15
+  ) +
+  geom_text(aes(label = day(date)), size = 3.5, color = "#E2E0D9") +
+  scale_fill_material("yellow") + 
+  scale_y_reverse() +
+  scale_x_discrete(label = month.abb) +
+  labs(x = "",
+       y = "",
+       title = "Lunar Calendar 2022",
+       caption = "Graphic: Sung Inkyung") +
+  theme_minimal() +
+  theme(legend.position = "none",
+        plot.background = element_rect(fill = "#24344C", color = NA), 
+        panel.grid = element_blank(),
+        plot.title = element_text(color = "#E9B560", family = f1, size = 36, face = "bold", hjust = 0.5, margin = margin(b = 15)), 
+        plot.caption = element_text(color = "#8C8C84", family = f2, size = 13, hjust = 0.5),
+        axis.text.x = element_text(color = "#E2E0D9", family = f2, size = 12),
+        axis.text.y = element_blank(),
+        plot.margin = margin(20, 20, 20, 20))
+
+ggsave("day1_part_to_whole1.png", dpi = 320, width = 30, height = 38,units = "cm")
+```
+
+```{r}
+df <- df_moon %>% 
+  mutate(weekday = weekdays(date),
+         weekday = case_when(weekday == "Sunday" ~ "Sun",
+                             weekday == "Monday" ~ "Mon",
+                             weekday == "Tuesday" ~ "Tue",
+                             weekday == "Wednesday" ~ "Wed",
+                             weekday == "Thursday" ~ "Thur",
+                             weekday == "Friday" ~ "Fri",
+                             weekday == "Saturday" ~ "Sat"))
+```
+
+```{r}
+plot_month <- df %>% 
+  ggplot(aes(x = factor(weekday), y = week)) +
+  geom_moon(
+    aes(ratio = moon$fraction, fill = moon$fraction, 
+        right = moon$phase < .5),
+    color = "white", alpha = 1, stroke = .01, size = 11
+  ) +
+  geom_text(aes(label = day(date)), size = 3.5, color = "#E2E0D9") +
+  scale_fill_material("yellow") + #scale_fill_gradientn(colors = met.brewer("OKeeffe2")) +
+  scale_y_reverse() +
+  facet_wrap(~ factor(month), nrow = 3, scales = "free_y") +
+  labs(x = "",
+       y = "",
+       title = "Lunar Calendar 2022",
+       caption = "Graphic: Sung Inkyung") +
+  theme_minimal() +
+  theme(legend.position = "none",
+        strip.text = element_text(family = f2, size = 21, color = "#E2E0D9", face = "bold", hjust = 0.5, margin = margin(b = 15)),
+        panel.spacing = unit(2, "lines"),
+        plot.background = element_rect(fill = "#24344C", color = NA), 
+        panel.grid = element_blank(),
+        plot.title = element_text(color = "#E9B560", family = f1, size = 36, face = "bold", hjust = 0.5, margin = margin(b = 25)), 
+        plot.caption = element_text(color = "#8C8C84", family = f2, size = 13, hjust = 0.5, margin = margin(t = 25)),
+        axis.text.x = element_text(color = "#E2E0D9", family = f2, size = 12, margin = margin(t = 10)),
+        axis.text.y = element_blank(),
+        plot.margin = margin(20, 20, 20, 20))
+
+ggsave("day1_part_to_whole2.png", dpi = 320, width = 40, height = 36,units = "cm")
+```

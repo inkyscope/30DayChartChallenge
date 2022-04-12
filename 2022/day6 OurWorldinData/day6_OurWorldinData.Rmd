@@ -1,0 +1,76 @@
+---
+title: "day6 Our World in Data"
+output: html_document
+date: '2022-04-07'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(ggfx)
+library(ggtext)
+library(nord)
+library(janitor)
+library(showtext)
+
+font_add_google("Anton")
+font_add_google("Lato")
+
+showtext_opts(dpi = 320)
+showtext_auto()
+
+f1 = "Anton"
+f2 = "Lato"
+```
+
+```{r}
+## https://github.com/jkaupp/30DayChartChallenge/tree/master/day19
+
+water_access <- read_csv( "https://raw.githubusercontent.com/jkaupp/30DayChartChallenge/master/day19/data/number-without-access-water-source.csv") %>%
+  clean_names() %>%
+  set_names(c("entity", "code", "year", "no_access"))
+
+regions <- filter(water_access, entity %in% c("North America",
+                                              "Europe & Central Asia",
+                                              "Latin America & Caribbean",
+                                              "Middle East & North Africa",
+                                              "South Asia",
+                                              "East Asia & Pacific",
+                                              "Sub-Saharan Africa"))
+
+world <- filter(water_access, code == "OWID_WRL") %>%
+  select(year, world = no_access)
+
+df_plot <- regions %>%
+  left_join(world) %>%
+  mutate(percent = no_access/world)
+
+plot <- ggplot(df_plot, aes(x = year, y = percent)) +
+  as_reference(
+    geom_text(aes(label = entity, x = 1990, y = 0), size = 14, family = f1, color = "#B6CFE4", hjust = 0, vjust = 0),
+    id = "area") +
+  with_blend(
+    geom_area(aes(group = entity, fill = entity), show.legend = FALSE),
+    bg_layer = "area", blend_type = "xor") +
+  scale_x_continuous(expand = c(0.01, 0.01)) +
+  scale_y_continuous(expand = c(0.01, 0.01), breaks = seq(0, 0.4, 0.2), labels = c("0", "20", "40%")) +
+  scale_fill_nord("frost") +
+  facet_wrap(~ entity, ncol = 1) +
+  labs(x = "", y = "", 
+       title = "PERCENTAGE OF GLOBAL POPULATION<br><span style = 'color:#b6cfe4'>WITHOUT ACCESS TO</span><br>AN IMPROVED WATER SOURCE",
+       caption = "Source: OurWorldinData | Graphic: Sung Inkyung") +
+  theme_minimal() +
+  theme(strip.text = element_blank(),
+        plot.background = element_rect(fill = "#010e21", color = NA),
+        plot.title = element_markdown(family = f1, size = 32, hjust = 0.5, color = "#4287f5", margin = margin(b = 25)),
+        plot.caption = element_text(family = f2, size = 10,  color = "gray75", margin = margin(t = 25)),
+        panel.grid = element_blank(),
+        axis.text = element_text(family = f2, size = 10, color = "#B6CFE4"),
+        plot.margin = margin(30, 20, 20, 20))
+
+ggsave("day6_OurWorldinData.png", dpi = 320, width = 30, height = 22, units = "cm")
+```
+

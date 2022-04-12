@@ -1,0 +1,60 @@
+---
+title: "Untitled"
+output: html_document
+date: '2022-04-08'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#remotes::install_github('coolbutuseless/ggsvg')
+library(tidyverse)
+library(ggbeeswarm)
+library(ggsvg)
+library(ggtext)
+library(fontawesome)
+library(showtext)
+
+font_add_google("Lora")
+font_add_google("Fira Sans")
+showtext_opts(dpi = 320)
+showtext_auto()
+
+f1 = "Lora"
+f2 = "Fira Sans"
+```
+
+```{r}
+nobel_winners <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-05-14/nobel_winners.csv")
+
+ range(nobel_winners$prize_year)
+ 
+df <- nobel_winners %>% 
+  filter(gender != "NA") %>% 
+  group_by(year = prize_year, category, gender) %>% 
+  summarise(total = sum(n())) %>% 
+  ungroup() %>% 
+  mutate(flabel = ifelse(
+    gender == "Female", fa("female", fill = "#D81E5B", fill_opacity = 0.8),
+    fa("male", fill = "#331832", fill_opacity = 0.5)))
+  
+ plot <- ggplot(df, aes(x = category, y = year)) +
+    geom_point_svg(aes(svg = flabel), size = 4.5, position = position_quasirandom(bandwidth = 0.7, varwidth = TRUE)) +
+    labs(x = "", y = "",
+       title = "<span style = 'color:#D81E5B'>**FEMALE**</span> and <span style = 'color:#331832'>**MALE**</span> in the NOBEL PRIZE LAUREATES<br>1905 - 2016",
+       caption = "Source: Kaggle | Graphic: Sung Inkyung") +
+   coord_flip(clip = "off") +
+   theme_minimal() +
+   theme(legend.position = "none",
+         plot.background = element_rect(fill = "#FFFAF2", color = NA),
+         plot.title = element_markdown(family = f1, size = 24, face = "bold", hjust = 0.5, lineheight = 1.3),
+         plot.caption = element_text(family = f2, size = 11, color = "gray35"),
+         panel.grid = element_blank(),
+         axis.text.y = element_text(family = f1, size = 13, face = "bold", color = "#331832"),
+         axis.text.x = element_text(family = f2, size = 11),
+         plot.margin = margin(20, 20, 20, 20))
+ 
+ ggsave("day2_pictogram1.png", width = 30, height = 26, units = "cm")
+```

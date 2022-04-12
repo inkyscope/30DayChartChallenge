@@ -1,0 +1,113 @@
+---
+title: "day11 Circular"
+output: html_document
+date: '2022-04-12'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(ggforce)
+library(packcircles)
+library(ggtext)
+library(patchwork)
+library(showtext)
+
+font_add_google("Lobster")
+font_add_google("Barlow Condensed")
+font_add_google("Caveat")
+
+showtext_opts(dpi = 320)
+showtext_auto()
+
+f1 = "Lobster"
+f2 = "Barlow Condensed"
+f3 = "Caveat"
+```
+
+```{r}
+## https://github.com/AbdoulMa/TidyTuesday/blob/main/2021_w43/tidytuesday_2021_w43.R
+
+fastfood <- read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2018/2018-09-04/fastfood_calories.csv")
+
+type <- c("Taco Bell", "Subway", "Burger King", "Mcdonalds", "Arbys", "Sonic")
+
+res_cols <- c("Taco Bell" = "#A77BCA",
+               "Subway" = "#008C15",
+               "Burger King" = "#DA291C", 
+               "Mcdonalds" = "#FFC72C",
+               "Arbys" = "#FFFFFF",
+               "Sonic" = "#0A68B0")
+
+df <- fastfood %>% 
+  filter(restaurant %in% type) %>% 
+  select(restaurant, item, calories) %>% 
+  arrange(calories) %>% 
+  mutate(id = row_number()) %>% 
+  relocate(id)
+```
+
+```{r}
+df_summary <- df %>% 
+  group_by(restaurant) %>% 
+  summarise(
+    n = n(),
+    max_cal = max(calories, na.rm = TRUE),
+    count = n_distinct(item),
+    mean = round(mean(calories, na.rm = TRUE), 1)
+  )
+ 
+
+plot_summary <- df_summary %>%
+  ungroup() %>% 
+  mutate(restaurant = fct_reorder(restaurant, mean)) %>% 
+  ggplot() +
+  geom_rect(aes(fill = restaurant),
+            xmin = -1, ymin = -1, xmax = 1, ymax = 1, color = "snow3") +
+  geom_richtext(aes(label = glue::glue("<span style='font-size: 15px;font-family: \"Barlow Condensed\";'> **{n}** restaurants<br>fr. {count} menus<br> Max: {max_cal} cal<br>Avg: {mean} cal</span>")),
+                family = f2, hjust = 0.5, size = 3.5, fontface = "bold", color = "black", 
+                x = 0.5, y = 0.5, fill = NA, 
+                lineheight = 1.5,
+                label.color = NA, show.legend = FALSE) +
+  scale_fill_manual(values = res_cols,
+                    guide = "none") +
+  facet_wrap(~restaurant, nrow = 1) +
+  coord_fixed() +
+  theme_minimal() +
+  theme(strip.text= element_text(family = f2, size = 16, face = "bold"),
+        panel.spacing = unit(0.05, "lines"))
+```
+
+```{r}
+set.seed(2022)
+packing <- circleProgressiveLayout(df$calories)
+
+plot_circle <- packing %>% 
+  arrange(radius) %>% 
+  mutate(id = row_number()) %>% 
+  left_join(df) %>% 
+  ggplot() +
+  geom_circle(aes(x0 = x, y0 = y, r = radius, fill = restaurant)) +
+  scale_fill_manual(values = res_cols, guide = "none") +
+  coord_fixed(expand = FALSE, clip = "off") +
+  theme_void() +
+  theme()
+```
+
+```{r}
+plot_summary / plot_circle +
+  plot_annotation(title = "US Fast Food Calories",
+                  subtitle = "The plot below shows the size of each circle reflects calories per menu at America's leading fast food restaurants",
+                  caption = "Source:TidyTuesday2018 Week23\nData: fastfoodnutrients.org\nCoding Credit:@AbdulMa\nGraphic: Sung Inkyung") +
+  plot_layout(nrow = 2, heights = c(1, 6)) &
+  theme(plot.background = element_rect(fill = "floralwhite", color = NA),
+        plot.title = element_text(family = f1, size = 36, hjust = 0.5),
+        plot.subtitle = element_text(family = f2, size = 17, hjust = 0.5),
+        plot.caption = element_text(family = f3, size = 13, lineheight = 0.9, margin = margin(t = 25)),
+        plot.margin = margin(20, 20, 20, 20))
+
+ggsave("day11_Circular.png", width = 28, height = 34, units = "cm")
+```

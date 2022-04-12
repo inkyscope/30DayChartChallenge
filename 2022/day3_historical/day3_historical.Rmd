@@ -1,0 +1,122 @@
+---
+title: "w1 Olympics"
+author: "Sung Inkyung"
+date: '2022 1 4'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+### Source[tidytuesday by @geokaramanis](https://github.com/gkaramanis/tidytuesday/blob/master/2021/2021-week48/cricket.R)
+```{r}
+library(tidyverse)
+library(colorspace)
+library(ggtext)
+library(showtext)
+
+font_add_google("Teko")
+font_add_google("Jetbrains Mono")
+
+showtext_opts(dpi = 300)
+showtext_auto(enable = TRUE)
+```
+
+
+```{r}
+olympics <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-07-27/olympics.csv') %>% 
+  select(id, country = team, year, season, medal) %>% 
+  filter(!is.na(medal),
+         medal == "Gold",
+         year >= 2006)
+
+df_country <- olympics %>% 
+  group_by(country) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count)) %>% 
+  slice_max(n = 10, order_by = count) %>% 
+  ungroup() %>% 
+  distinct(country)
+
+df <- olympics %>% 
+  filter(country %in% df_country$country) %>% 
+  mutate(type = case_when(season == "Summer" ~ TRUE,
+                          TRUE ~ FALSE))
+  
+a = 2
+
+tree <- df %>% 
+  group_by(country) %>% 
+  mutate(
+    angle = if_else(type, -a * pi/210, a * pi/210),
+    a = cumsum(angle + lag(a, default = 0)) + pi / 3,
+    x = 0,
+    y = 0
+  ) %>% 
+  mutate(
+    x = cumsum(lag(x, default = 0) + cos(lag(a, default = 0))) -1,
+    y = cumsum(lag(y, default = 0) + sin(lag(a, default = 0))),
+    summer = sum(type),
+    winter = sum(!type),
+    type_pct = round(summer / (summer + winter) * 100)
+  ) %>% 
+  ungroup() 
+
+country_labels <- tree %>% 
+  select(id, country, x, y, summer, winter, type_pct) %>% 
+  group_by(country) %>% 
+  slice_max(id, n = 1) %>% 
+  ungroup() %>%
+  mutate(
+    h = ifelse(x > 0, 0, 1),
+    nx = ifelse(x > 0, 1, -1),
+    label = paste0("**", "<span style='color:#c6c1b9'>", country, "</span>", ":", "**", "<span style='color:#01e1ec'>", summer, "</span>", "<span style='color:white'>", " ", winter, "</span>")) %>% 
+  group_by(id) %>% 
+  slice(1)
+```
+
+```{r}
+plot_tree <- tree %>% 
+  ggplot() +
+  geom_path(aes(x = x, y = y,
+                group = country, 
+                color = type),
+            size = 0.8, linejoin = "mitre", lineend = "butt", alpha = 0.9) +
+  #Labels for countries with more summer medals
+  geom_richtext(data = subset(country_labels, nx == 1), aes(x = x, y = y, label = label, hjust = h), 
+                nudge_x = 8, lineheight = 0.3, fill = NA, 
+                label.color = NA, label.padding = grid::unit(rep(0, 4), "pt"), 
+                vjust = 0.8, size = 4.5) +
+  # Labels for countries with more winter medals
+  geom_richtext(data = subset(country_labels, nx == -1), aes(x = x, y = y, label = label, hjust = h), 
+                nudge_x = -8, lineheight = 0.3, fill = NA, 
+                label.color = NA, label.padding = grid::unit(rep(0, 4), "pt"),
+                vjust = 0.8, size = 4.5) +
+  scale_color_manual(values = c("white", "#01e1ec")) +
+  xlim(c(-200, 220)) +
+  ylim(c(-70, 70)) +
+  coord_cartesian(clip = "off") +
+  labs(title = "<span style = 'color:#01e1ec'>**Summer**</span> <span style = 'color:white'>**Winter** <span style = 'color:#d4af37'>**Olympics** 2006 - 2016</span>",
+       subtitle = "<span style = 'color:#d4af37'> Gold medals from each 3 olympics</span>",
+       caption = "Source: Kaggle | Graphic: Sung Inkyung") +
+   theme_void() +
+  theme(
+    legend.position = "none",
+    plot.background = element_rect(fill = "black", color = NA),
+    plot.title = element_markdown(size = 32,
+                                  family = "Teko",
+                                  hjust = 0.5,
+                                  margin = margin(b = 7)),
+    plot.subtitle = element_markdown (size = 22, 
+                                      family = "Jetbrains Mono",
+                                      hjust = 0.5,
+                                      margin = margin(b = 15)),
+    plot.caption = element_text(size = 11, 
+                                family = "Jetbrains Mono",
+                                color = "gray65",
+                                margin = margin(t = 17)),
+    plot.margin = margin(20, 20, 20, 20)
+  ) 
+
+ggsave("w1_Olympics.png", width = 23, height = 24, units = "cm")
+```

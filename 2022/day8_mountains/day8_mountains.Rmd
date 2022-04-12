@@ -1,0 +1,64 @@
+---
+title: "day8 Mountains"
+output: html_document
+date: '2022-04-08'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#remotes::install_github("hrbrmstr/waffle")
+library(tidyverse)
+library(waffle)
+library(ggtext)
+library(showtext)
+
+font_add_google("Bebas Neue")
+font_add_google("Fira Sans")
+font_add_google("Saira")
+
+showtext_opts(dpi = 320)
+showtext_auto(enable = TRUE)
+
+f1 = "Bebas Neue"
+f2 = "Fira Sans"
+f3 = "Saira"
+```
+
+```{r}
+expeditions <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-09-22/expeditions.csv')
+
+df_plot <- expeditions %>% 
+  mutate(decade = floor(year / 10) * 10,
+         status = ifelse(str_detect(termination_reason, "Success"), "Success", "Failure")) %>% 
+  group_by(decade) %>% 
+  count(status, sort = T) %>% 
+  ungroup() 
+
+plot <- ggplot(df_plot, aes(values = ceiling(n/10), fill = status)) +
+  geom_waffle(n_rows = 10, size = 0.2, color = "#F8F8F8", flip = TRUE) +
+  scale_fill_manual(values = c("#AE2699", "#BFAA57"),
+                    name = "",
+                    labels = c("SUCCESS", "FAILURE")) +
+  facet_wrap(~decade, nrow = 1, strip.position = "bottom",
+             labeller = labeller(decade = function(string){paste0(string,"'s")})) +
+  labs(x = "", y = "",
+       title = "<span style = 'color:#AE2699'>**Success**</span> and <span style = 'color:#BFAA57'>**Failure**</span> in the Himalayas 1900 - 2010",
+       subtitle = "Each square represents 10 expeditions",
+       caption = "Source: The Himalayan Database | Graphic: Sung Inkyung") +
+  coord_equal() +
+  theme_void() +
+  theme(#legend.position = "none",
+        plot.background = element_rect(fill = "snow2", color = NA),
+        plot.title = element_markdown(family = f1, size = 26, hjust = 0.5, margin = margin(b = 9)),
+        plot.subtitle = element_text(family = f2, size = 14, hjust = 0.5, margin = margin(b = 25)),
+        plot.caption = element_text(family = f2, size = 9, margin = margin(t = 25)),
+        strip.text.x = element_text(family = f3, size = 13, margin = margin(t = 3)),
+        panel.spacing = unit(0, "mm"),
+        plot.margin = margin(20, 20, 20, 20))
+
+ggsave("day8_mountains.png", width = 32, height = 26, units = 'cm')
+```
+

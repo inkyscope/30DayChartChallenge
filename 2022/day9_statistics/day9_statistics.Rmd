@@ -1,0 +1,139 @@
+---
+title: "day9 statistics"
+output: html_document
+date: '2022-04-09'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(tidytext)
+library(tidymodels)
+library(showtext)
+
+font_add_google("Oswald")
+font_add_google("Fira Sans")
+font_add_google("Saira")
+
+showtext_opts(dpi = 320)
+showtext_auto(enable = TRUE)
+
+f1 = "Oswald"
+f2 = "Fira Sans"
+f3 = "Saira"
+```
+
+```{r}
+netflix_titles <- read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-04-20/netflix_titles.csv")
+
+netflix_titles %>% 
+  unnest_tokens(word, description) %>% 
+  anti_join(get_stopwords()) %>% 
+  count(type, word, sort = TRUE) %>% 
+  group_by(type) %>% 
+  slice_max(n = 15, order_by = n) %>% 
+  ungroup() %>% 
+  mutate(word = reorder_within(word, n, type)) %>% 
+  ggplot(aes(n, word, fill = type)) +
+  geom_col(show.legend = FALSE, alpha = 0.8) +
+  scale_y_reordered() +
+  facet_wrap(~type, scales = "free") +
+  labs(x = "Frequency", y = "",
+       title = "Top Words in Netflix Description by Frequency")
+```
+
+```{r}
+# Build a model
+set.seed(2022)
+netflix_split <- netflix_titles %>% 
+  select(type, description) %>% 
+  initial_split(strata = type)
+
+netflix_train <- training(netflix_split)
+netlfix_test <- testing(netflix_split)
+
+set.seed(2022)
+netflix_folds <- vfold_cv(netflix_train, strata = type)
+
+# Feature engineering recipe
+library(textrecipes)
+library(themis)
+
+netflix_rec <- recipe(type ~ description, data = netflix_train) %>% 
+  step_tokenize(description) %>% 
+  step_tokenfilter(description, max_tokens = 1e3) %>% 
+  step_tfidf(description) %>% 
+  step_normalize(all_numeric_predictors()) %>% 
+  step_smote(type)
+
+svm_spec <- svm_linear() %>% 
+  set_mode("classification") %>% 
+  set_engine("LiblineaR")
+
+netflix_wf <- workflow() %>% 
+  add_recipe(netflix_rec) %>% 
+  add_model(svm_spec)
+
+# Fit the workflow that combines feature engineering with the SVM model
+doParallel::registerDoParallel()
+set.seed(2022)
+svm_rs <- fit_resamples(
+  netflix_wf,
+  netflix_folds,
+  metrics = metric_set(accuracy, recall, precision),
+  control = control_resamples(save_pred = TRUE)
+)
+
+svm_rs %>% 
+  conf_mat_resampled(tidy = FALSE) %>% 
+  autoplot()
+
+# Fit and evaluate final model
+final_fitted <- last_fit(
+  netflix_wf, 
+  netflix_split,
+  metrics = metric_set(accuracy, recall, precision)
+)
+collect_metrics(final_fitted)
+collect_predictions(final_fitted) %>% 
+  conf_mat(type, .pred_class)
+
+netflix_fit <- extract_fit_parsnip(final_fitted$.workflow[[1]])
+
+tidy(netflix_fit) %>% 
+  arrange(estimate)
+
+tidy(netflix_fit) %>% 
+  filter(term != "Bias") %>% 
+  group_by(sign = estimate > 0) %>% 
+  slice_max(n = 30, abs(estimate)) %>% 
+  ungroup() %>% 
+  mutate(term = str_remove(term, "tfidf_description_"),
+         sign = if_else(sign, "More from Movies", "More from TV Shows")) %>% 
+  ggplot(aes(abs(estimate), fct_reorder(term, abs(estimate)), fill = sign)) +
+  geom_col(alpha = 0.8, show.legend = FALSE) +
+  facet_wrap(~sign, scales = "free") +
+  scale_fill_manual(values = c("#D81E5B", "#294B69")) +
+  labs(x = "Coefficient from linear SVM", y = "",
+       title = "Which Word Best Describes MOVIES vs TV SHOWS?",
+       subtitle = "Words are extracted from descriptions of moves and TV shows on Netflix by tfidf",
+       caption = "Source: #TidyTuesday 2021 Week17 Dataset\nTutorial: Tidymodels by Julia Silge\nGraphic: Sung Inkyung") +
+  theme_minimal() +
+  theme(strip.text = element_text(family = f3, size = 15, face = "bold"),
+        plot.background = element_rect(fill = "snow2", color = NA),
+        panel.background = element_rect(fill = "snow2", color = NA),
+        plot.title = element_text(family = f1, size = 22, face = "bold", hjust = 0.5, margin = margin(b = 9)),
+        plot.subtitle = element_text(family = f2, size = 12, hjust = 0.5, margin = margin(b = 15)),
+        plot.caption = element_text(family = f3, size = 6, hjust = 0.95, lineheight = 1.1, margin = margin(t = 15)),
+        panel.grid.major.x = element_line(size = 0.3, color = "snow3"),
+        axis.text = element_text(family = f3, size = 9),
+        axis.title = element_text(family = f2, size = 9),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.minor = element_blank())
+
+ggsave("day9_statistics.png", width = 28, height = 16, units = "cm")
+```

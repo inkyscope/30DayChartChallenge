@@ -1,0 +1,257 @@
+---
+title: "day9_statistics1"
+output: html_document
+date: '2022-04-09'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(tidytext)
+library(tidylo)
+library(scales)
+library(showtext)
+
+font_add_google("Dancing Script")
+font_add_google("Staatliches")
+font_add_google("Abel")
+
+showtext_opts(dpi = 320)
+showtext_auto(enable = TRUE)
+
+f1 = "Dancing Script"
+f2 = "Staatliches"
+f3 = "Abel"
+
+theme_set(theme_minimal())
+```
+
+
+```{r}
+beyonce_lyrics <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-09-29/beyonce_lyrics.csv')
+
+taylor_swift_lyrics <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-09-29/taylor_swift_lyrics.csv') %>%
+  janitor::cl
+ean_names()
+```
+
+
+```{r}
+##https://github.com/dgrtwo/data-screencasts/blob/master/2020_09_29_taylor_swift_beyonce.Rmd
+beyonce <- beyonce_lyrics %>% 
+  select(artist = artist_name, title = song_name, lyrics = line)
+
+talyor <- taylor_swift_lyrics %>% 
+  select(artist, title, lyrics)
+
+filler <- c("ah", "yo", "v.o", "ooh", "ey", "y'all", "ha", "da", "eeh", "di", "uh", "ya")
+
+df_word <- bind_rows(beyonce, talyor) %>% 
+  unnest_tokens(word, lyrics) %>% 
+  anti_join(stop_words) %>% 
+  filter(!word %in% filler) %>% 
+  count(artist, title, word) %>% 
+  group_by(artist, word) %>% 
+  summarise(count = n(),
+            freq = sum(n)) %>% 
+  mutate(prc = freq / sum(freq)) %>% 
+  group_by(word) %>% 
+  mutate(total = sum(freq)) %>% 
+  ungroup() 
+
+df_artist <- df_word %>% 
+  bind_log_odds(artist, word, n = freq) %>% 
+  arrange(desc(abs(log_odds_weighted))) %>% 
+  filter(artist == "Beyoncé") %>% 
+  slice_max(total, n = 100, with_ties = FALSE) %>% 
+  slice_max(abs(log_odds_weighted), n = 25, with_ties = FALSE) %>% 
+  mutate(word = fct_reorder(word, log_odds_weighted)) %>% 
+  mutate(direction = ifelse(log_odds_weighted > 0, "Beyoncé", "Tylor Swift"))
+
+ggplot(df_artist, aes(log_odds_weighted, word, fill = direction)) +
+  geom_col()
+
+ggplot(df_artist, aes(log_odds_weighted, word)) +
+  geom_col(width = 0.1) +
+  geom_point(aes(size = freq, color = direction)) +
+  labs(color = "",
+       size = "# of words\n(both artists)",
+       x = "Relative use in Beyonce vs Taylor Swift(weighted)",
+       y = "",
+       title = "Which words most distinguish Beyonce and Taylor Swift songs?",
+       subtitle = "Among the 100 words most used by the artists")
+  
+df_comparison <- df_word %>% 
+  select(artist, word, prc, total) %>% 
+  pivot_wider(names_from = artist, values_from = prc,
+              values_fill = list(prc = 0)) %>% 
+  janitor::clean_names() %>% 
+  slice_max(total, n = 200, with_ties = FALSE)
+
+plot1 <- ggplot(df_comparison, aes(taylor_swift, beyonce)) +
+  geom_abline(color = "firebrick4") +
+  geom_point() +
+  geom_text(aes(label = word), vjust = -0.2, hjust = 1, check_overlap = TRUE) +
+  scale_x_log10(labels = percent) +
+  scale_y_log10(labels = percent)
+
+plot2 <- ggplot(df_comparison, aes(total, beyonce/taylor_swift)) +
+  geom_hline(yintercept = 1, color = "firebrick4") +
+  geom_point() +
+  geom_text(aes(label = word), vjust = -0.2, hjust = 1, check_overlap = TRUE) +
+  scale_x_log10(labels = percent) +
+  scale_y_log10()
+```
+
+```{r}
+## https://juliasilge.com/blog/netflix-titles/
+
+library(tidymodels)
+library(textrecipes)
+library(themis)
+```
+
+```{r}
+df <- bind_rows(beyonce, talyor) %>% 
+  unnest_tokens(word, lyrics) %>% 
+  anti_join(stop_words) %>% 
+  filter(!word %in% filler) %>% 
+  count(artist,word) %>% 
+  group_by(artist) %>% 
+  slice_max(n, n = 15) %>% 
+  ungroup() %>% 
+  mutate(word = reorder_within(word, n, artist)) %>% 
+  ggplot(aes(n, word, fill = artist)) +
+  geom_col() +
+  facet_wrap(~artist, scales = "free_y") +
+  scale_y_reordered()
+
+df <- bind_rows(beyonce, talyor) %>% 
+  unnest_tokens(word, lyrics) %>% 
+  anti_join(stop_words) %>% 
+  filter(!word %in% filler) %>% 
+  group_by(artist, word) %>% 
+  summarise(count = n()) %>% 
+  group_by(artist) %>% 
+  mutate(prc = count / sum(n())) %>% 
+  group_by(word) %>% 
+  mutate(total = sum(count))
+
+df %>% 
+  group_by(artist) %>% 
+  slice_max(total, n = 100, with_ties = FALSE) %>% 
+  slice_max(prc, n = 15, with_ties = FALSE) %>% 
+  ungroup() %>% 
+  mutate(word = fct_reorder(word, total)) %>% 
+  ggplot(aes(total, word, fill = artist)) +
+  geom_col() +
+  facet_wrap(~artist, scales = "free")
+
+```
+
+```{r}
+# Build a model
+set.seed(2022)
+bts_split <- bind_rows(beyonce, talyor) %>% 
+  select(artist, lyrics) %>% 
+  initial_split(strata = artist)
+
+bts_train <- training(bts_split)
+bts_test <- testing(bts_split)
+
+set.seed(2022)
+bts_folds <- vfold_cv(bts_train, strata = artist)
+bts_folds
+
+## Feature engineering recipe and modeling workflow
+bts_rec <- recipe(artist ~ lyrics, data = bts_train) %>% 
+  step_tokenize(lyrics) %>% 
+  step_tokenfilter(lyrics, max_tokens = 1e3) %>% 
+  step_tfidf(lyrics) %>% 
+  step_normalize(all_numeric_predictors()) %>% 
+  step_smote(artist)
+
+svm_spec <- svm_linear() %>% 
+  set_mode("classification") %>% 
+  set_engine("LiblineaR")
+
+bts_wf <- workflow() %>% 
+  add_recipe(bts_rec) %>% 
+  add_model(svm_spec)
+
+## Fit the workflow
+doParallel::registerDoParallel()
+set.seed(2022)
+svm_rs <- fit_resamples(
+  bts_wf,
+  bts_folds,
+  metrics = metric_set(accuracy, recall, precision),
+  control = control_resamples(save_pred = TRUE)
+)
+
+collect_metrics(svm_rs)
+
+svm_rs %>% 
+  conf_mat_resampled(tidy = FALSE) %>% 
+  autoplot()
+
+```
+
+```{r}
+## Fit and evaluate final model
+final_fitted <- last_fit(
+  bts_wf,
+  bts_split,
+  metrics = metric_set(accuracy, recall, precision)
+)
+
+collect_metrics(final_fitted)
+
+collect_predictions(final_fitted) %>% 
+  conf_mat(artist, .pred_class)
+
+bts_fit <- extract_fit_parsnip(final_fitted$.workflow[[1]])
+tidy(bts_fit) %>% 
+  arrange(estimate)
+
+tidy(bts_fit) %>% 
+  mutate(term = str_remove(term, "tfidf_lyrics_")) %>% 
+  filter(term != "Bias",
+         nchar(term) > 3) %>%  ##(term[str_detect(term, "^.{5}$")])
+  group_by(direction = estimate > 0) %>% 
+  slice_max(abs(estimate), n = 20) %>% 
+  ungroup() %>% 
+  mutate(direction = ifelse(direction, "BEYONCE", "TYLOR SWIFT"),
+         term = fct_reorder(term, abs(estimate))) %>% 
+  ggplot(aes(abs(estimate), term, fill = direction)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~direction, scales = "free") +
+  scale_fill_manual(values = c("#D66F5F", "#386F43")) +
+  labs(x = "Coefficient from linear SVM", y = "",
+       title = "Which words most distinguish Beyonce and Taylor Swift songs?",
+       subtitle = " Lyrics from 391 songs of Beyonce and 132 songs of Taylor Swift",
+       caption = "Source: #TidyTuesday 2021 Week17 Dataset\nTutorial: Tidymodels by Julia Silge\nGraphic: Sung Inkyung") +
+  theme_minimal() +
+  theme(strip.text = element_text(family = f2, size = 21, face = "bold"),
+        plot.background = element_rect(fill = "floralwhite", color = NA),
+        panel.background = element_rect(fill = "floralwhite", color = NA),
+        plot.title = element_text(family = f1, size = 28, face = "bold", hjust = 0.5, margin = margin(b = 9)),
+        plot.subtitle = element_text(family = f3, size = 16, hjust = 0.5, margin = margin(b = 15)),
+        plot.caption = element_text(family = f3, size = 11, hjust = 0.95, lineheight = 1.1, margin = margin(t = 15)),
+        
+        axis.text.y = element_text(family = f3, size = 15),
+        axis.text.x = element_text(family = f3, size = 13),
+        axis.title = element_text(family = f3, size = 13),
+        panel.grid.major.x = element_line(size = 0.3, color = "snow3"),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(20, 20, 20, 20))
+
+ggsave("day9_statistics1.png", width = 32, height = 26, units = "cm")
+  
+```
+
+

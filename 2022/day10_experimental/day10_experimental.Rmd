@@ -1,0 +1,252 @@
+---
+title: "day10 experimental"
+output: html_document
+date: '2022-04-11'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(tidytext)
+library(ggtext)
+library(tidylo)
+library(tidymodels)
+library(textrecipes)
+library(themis)
+library(discrim)
+library(naivebayes)
+library(patchwork)
+library(showtext)
+
+font_add_google("Nova Flat")
+font_add_google("Oxygen")
+
+f1 <- "Nova Flat"
+f2 <- "Oxygen"
+
+computer_raw <- read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-08-17/computer.csv")
+
+computer_raw %>%
+  distinct(value_id, .keep_all = TRUE) %>%
+  count(char_type)
+```
+
+```{r tf-idf vs log-odds-ratio}
+df <- computer_raw %>% 
+  select(value_id, line, type = char_type) %>% 
+  distinct(value_id, .keep_all = TRUE) %>% 
+  unnest_tokens(word, line) %>% 
+  count(type, word, sort = T) %>% 
+  filter(nchar(word) > 3)
+
+plot_tfidf <- df %>% 
+  bind_tf_idf(word, type, n) %>% 
+  arrange(desc(tf_idf)) %>% 
+  group_by(type) %>% 
+  slice_max(tf_idf, n = 10, with_ties = FALSE) %>% 
+  ungroup() %>% 
+  mutate(word = reorder_within(word, tf_idf, type)) %>% 
+  ggplot(aes(tf_idf, word, fill = type)) +
+  geom_col(show.legend = FALSE) +
+  scale_fill_manual(values = c("#D6A444", "#A71313")) +
+  facet_wrap(~type, scales = "free_y") +
+  scale_y_reordered() +
+  labs(x = "tf_idf",
+       y = "")
+
+plot_log <- df %>% 
+  bind_log_odds(type, word, n) %>% 
+  arrange(desc(log_odds_weighted)) %>% 
+  group_by(type) %>% 
+  slice_max(log_odds_weighted, n = 10, with_ties = FALSE) %>% 
+  ungroup() %>% 
+  mutate(word = reorder_within(word, log_odds_weighted, type)) %>% 
+  ggplot(aes(log_odds_weighted, word, fill = type)) +
+  geom_col(show.legend = FALSE) +
+  scale_fill_manual(values = c("#D6A444", "#A71313")) +
+  facet_wrap(~type, scales = "free_y") +
+  scale_y_reordered() +
+  labs(x = "log_odds_ratio",
+       y = "")
+```
+
+```{r naive Bayes vs SVM model}
+## https://juliasilge.com/blog/star-trek/
+set.seed(2022)
+
+trek_split <- computer_raw %>% 
+  distinct(value_id, .keep_all = TRUE) %>% 
+  select(type = char_type, line) %>% 
+  initial_split(prop = 0.7, strata = type)
+
+trek_train <- training(trek_split)
+trek_test <- testing(trek_split)
+
+set.seed(2022)
+trek_folds <- bootstraps(trek_train, strata = type)
+```
+
+```{r naive Bayes vs SVM model}
+## Feature engineering recipe and modeling workflow
+trek_rec <- recipe(type ~ line, data = trek_train) %>% 
+  step_tokenize(line) %>% 
+  step_stopwords() %>% 
+  step_tokenfilter(line, max_tokens = 100) %>% 
+  step_tfidf(line) %>% 
+  step_normalize(all_numeric_predictors()) %>% 
+  step_smote(type)
+
+prep(trek_rec)
+
+## naive Bayes model
+trek_nb <- naive_Bayes() %>% 
+  set_mode("classification") %>% 
+  set_engine("naivebayes")
+
+trek_sv <- svm_linear() %>% 
+  set_mode("classification") %>% 
+  set_engine("LiblineaR")
+
+trek_models <- workflow_set(
+  preproc = list(
+    all = trek_rec
+  ),
+  models = list(trek_nb, trek_sv),
+  cross = TRUE
+)
+
+## tuning parameters
+set.seed(2022)
+doParallel::registerDoParallel()
+
+trek_rs <- trek_models %>% 
+  workflow_map(
+    "fit_resamples",
+    resamples = trek_folds,
+    metrics = metric_set(accuracy, sensitivity, specificity)
+  )
+
+p2 <- autoplot(trek_rs)
+
+rank_results(trek_rs) %>% 
+  filter(.metric == "accuracy")
+```
+
+```{r naive Bayes vs SVM model}
+## Train and evaluate final model
+
+trek_wf <- workflow(trek_rec, trek_sv)
+
+trek_fit <- last_fit(
+  trek_wf, trek_split,
+  metrics = metric_set(accuracy, sensitivity, specificity)
+)
+
+collect_metrics(trek_fit)
+
+collect_predictions(trek_fit) %>% 
+  conf_mat(type, .pred_class) %>% 
+  autoplot()
+
+p1 <- extract_workflow(trek_fit) %>% 
+  tidy() %>% 
+  group_by(estimate) %>% 
+  slice_max(abs(estimate), n = 10) %>% 
+  ungroup() %>% 
+  mutate(term = str_remove(term, "tfidf_line_")) %>% 
+  filter(nchar(term) > 3) %>% 
+  mutate(label = ifelse(estimate > 0, "COMPUTER", "PEOPLE")) %>% 
+  ggplot(aes(estimate, fct_reorder(term, estimate), fill = label)) +
+  geom_col(show.legend = FALSE) +
+  scale_fill_manual(values = c("#D6A444", "#A71313")) +
+  labs(x = "Coefficients for words",
+       y = "",
+       fill = "More from",
+       title = "Which words most distinguishes <span style = 'color:#D6A444'>**COMPUTER**</span> and <span style = 'color:#A71313'>**PERSON**</span>?",
+       subtitle = "Classified by SVM model after comparing with Naive Bayes model;\nAccuracy-74%, Sensitivity-78% Specificity-72%",
+       caption = "Source: TidyTuesday2021 Week34 | Graphic: Sung Inkyung") +
+  theme(plot.background = element_rect(fill = "gray97", color = NA),
+        plot.title = element_markdown(family = f1, size = 28, hjust = 0.5, margin = margin(b = 9)),
+        plot.subtitle = element_text(family = f2, size = 16, hjust = 0.5, margin = margin(b = 15)),
+        plot.caption = element_text(family = f2, size = 11),
+        axis.text.y = element_text(family = f1, size = 11),
+        axis.text.x = element_text(family = f2, size = 10),
+        axis.title.x = element_text(family = f2, size = 10),
+        panel.grid.major.y = element_line(size = 0.3),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(20, 20, 20, 20))
+
+p1 + inset_element(p2, right = 0.6, bottom = 0.6, left = 0.03, top = 0.9)
+
+ggsave("day10_experimenta.png", width = 36, height = 28, units = "cm")
+```
+
+```{r}
+rec_all <- recipe(type ~ line, data = trek_train) %>% 
+  step_tokenize(line) %>% 
+  step_tokenfilter(line, max_tokens = 100) %>% 
+  step_tfidf(line)
+
+rec_all_norm <- rec_all %>% 
+  step_normalize(all_predictors())
+
+rec_all_smote <- rec_all_norm %>% 
+  step_smote()
+
+prep(rec_all_smote)
+
+
+rec_stop <- recipe(type ~ line, data = trek_train) %>% 
+  step_tokenize(line) %>% 
+  step_stopwords() %>% 
+  step_tokenfilter(line, max_tokens = 100) %>% 
+  step_tfidf(line)
+
+rec_stop_norm <- rec_stop %>% 
+  step_normalize(all_predictors())
+
+rec_stop_smote <- rec_stop_norm%>% 
+  step_smote(type)
+
+prep(rec_stop_smote)
+
+nb_spec <- naive_Bayes() %>% 
+  set_mode("classification") %>% 
+  set_engine("naivebayes")
+
+svm_spec <- svm_linear() %>% 
+  set_mode("classification") %>% 
+  set_engine("LiblineaR")
+
+all_models <- workflow_set(
+    preproc = list(
+      all = rec_all,
+      all_norm = rec_all_norm,
+      all_smote = rec_all_smote,
+      stop = rec_stop, 
+      stop_norm = rec_stop_norm,
+      stop_smote = rec_stop_smote
+    ),
+    models = list(nb = nb_spec, svm = svm_spec),
+    cross = TRUE
+  )
+
+set.seed(2022)
+doParallel::registerDoParallel()
+
+trek_rs <- all_models %>% 
+  workflow_map(
+    "fit_resamples",
+    resamples = trek_folds,
+    metrics = metric_set(accuracy, sensitivity, specificity)
+  )
+
+autoplot(trek_rs)
+
+rank_results(trek_rs) %>% 
+  filter(.metric == "accuracy")
+```

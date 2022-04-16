@@ -1,0 +1,168 @@
+---
+title: "day13 correlation"
+output: html_document
+date: '2022-04-15'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(broom)
+library(showtext)
+
+font_add_google("Bebas Neue")
+font_add_google("Saira")
+
+showtext_opts(dpi = 320)
+showtext_auto()
+
+f1 = "Bebas Neue"
+f2 = "Saira"
+```
+
+
+```{r}
+## personal loan, Securities Account, CD Account, Online, Credit Card: 0:N, 1:Y
+## Education: 1:Undergrad, 2:Graduate, 3: Advance/Professional
+personal_loan <- read_csv("~/Documents/projectR/30DayChartChallenge/data/personaloan.csv") %>% 
+  janitor::clean_names() %>% 
+  select(-c(id, zip_code))
+
+df_pl <- personal_loan %>% 
+  select(personal_loan)
+
+df_scaled <- personal_loan %>% 
+  scale()
+  
+df <- cbind(df_pl, df_scaled) %>% 
+  lm(personal_loan ~., data = .) %>% 
+  tidy(conf_int = TRUE) %>% 
+  filter(term != "(Intercept)") %>% 
+  arrange(estimate) %>% 
+  group_by(direction = ifelse(estimate < 0, "Negative", "Positive")) %>% 
+  ungroup() %>% 
+  mutate(term = fct_reorder(term, estimate))
+
+df %>% 
+  ggplot(aes(estimate, term, fill = direction)) +
+  geom_col() +
+  labs(x = "Estimated effect of condition",
+       title = "What conditions are predictive of Personal Loan?")
+
+p1 <- ggplot(df, aes(x = estimate, y =term, color = direction,  group = direction)) +
+  geom_line(size = 2.1, alpha = 0.7, show.legend = F) +
+  geom_point(size = 3, show.legend = F) +
+  scale_color_manual(values = c("black", "firebrick4")) +
+  geom_vline(xintercept = 0, linetype = "dotted", size = 0.7) +
+  labs(x = "",
+       y = "") +
+  theme_minimal()+
+  theme(panel.grid.major.x = element_line(size = 0.4),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor = element_blank())
+```
+
+```{r}
+p2 <- ggplot(df, aes(x = estimate, y = term, color = direction,  group = direction)) +
+  geom_vline(xintercept = 0, linetype = "dotted", size = 0.7) +
+  geom_errorbar(aes(xmin = estimate - 1.96 * std.error, 
+                    xmax = estimate + 1.96 * std.error),
+                size = 1.3, alpha = 0.8) +
+  geom_point(size = 3) +
+  scale_color_manual(values = c("black", "firebrick4")) +
+  labs(x = "",
+       y = "",
+       title = "Overall Factors relating to Personal Loans") +
+  theme_minimal()+
+  theme(panel.grid.major.x = element_line(size = 0.4),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor = element_blank())
+
+```
+
+```{r}
+## https://juliasilge.com/blog/college-sports/
+library(rsample)
+set.seed(2022)
+
+df_pl_edu <- personal_loan %>% 
+  select(education, personal_loan) 
+
+df_scaled <- personal_loan %>% 
+  select(-c(education, personal_loan)) %>% 
+  scale()
+
+df <- cbind(df_pl_edu, df_scaled) 
+
+df_no_education <- lm(personal_loan ~ age + experience + income + family + cc_avg + mortgage + securities_account + cd_account + online + credit_card, data = df)
+
+df_education <- lm(personal_loan ~ age + experience + income + family + cc_avg + mortgage + securities_account + cd_account + online + credit_card + education, data = df)
+
+bind_rows(
+  tidy(df_no_education) %>% 
+    mutate(education = "ignored"),
+  tidy(df_education) %>% 
+  mutate(education = "reflected")
+) %>% 
+  filter(term != "(Intercept)",
+         term != "education") %>% 
+  ggplot(aes(estimate, term, color = education)) +
+  geom_errorbar(aes(xmin = estimate - 1.96 * std.error,
+                    xmax = estimate + 1.96 * std.error),
+                size = 1.3, alpha = 0.8) +
+  geom_point(size = 3) +
+  geom_vline(xintercept = 0, size = 1.5, lty = "dotted") +
+  scale_color_manual(values = c("black", "firebrick4")) +
+  labs(x = "",
+       y = "",
+       title = "Factors Relating to Personal Loans") +
+  theme_minimal()+
+  theme(panel.grid.major.x = element_line(size = 0.4),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor = element_blank())
+```
+
+```{r}
+## Boostrap intervals
+library(rsample)
+set.seed(2022)
+
+ignore_intervals <- reg_intervals(personal_loan ~ age + experience + income + family + cc_avg + mortgage + securities_account + cd_account + online + credit_card, data = df, times = 500)
+
+set.seed(2022)
+reflect_intervals <- reg_intervals(personal_loan ~ age + experience + income + family + cc_avg + mortgage + securities_account + cd_account + online + credit_card + education, data = df, times = 500)
+
+reflect_intervals %>% 
+  arrange(desc(.estimate))
+
+bind_rows(ignore_intervals %>% mutate(education = "ignored"),
+          reflect_intervals %>% mutate(education = "reflected")) %>% 
+  filter(term != "education") %>% 
+  ggplot(aes(x = .estimate, y = term, color = education)) +
+  geom_errorbar(aes(xmin = .lower, xmax = .upper), 
+                    size = 1.3, alpha = 0.8) +
+  geom_point(size = 3) +
+  geom_vline(xintercept = 0, lty = "dotted", size = 1.3, color = "gray35") +
+  scale_color_manual(values = c("black", "firebrick4")) +
+  labs(x = "",
+       y = "",
+       title = "Bootstrap Confidence Intervals for Personal Loans", 
+       subtitle = "Among the factors related to personal loan, it shows the correlation with education",
+       caption = "Source: Kaggle | Graphic: Sung Inkyung") +
+  theme_minimal()+
+  theme(legend.position = "bottom",
+        legend.text = element_text(family = f2, size = 13),
+        plot.background = element_rect(fill = "white", color = NA),
+        plot.title = element_text(family = f1, size = 28, hjust = 0.5, margin = margin(b = 9)),
+        plot.subtitle = element_text(family = f2, size = 16, hjust = 0.5, margin = margin(b = 15)),
+        plot.caption = element_text(family = f2, size = 8, hjust = 1),
+        panel.grid.major.x = element_line(size = 0.4),
+        panel.grid.major.y = element_line(size = 0.4),
+        panel.grid.minor = element_blank(),
+        axis.text.y = element_text(family = f2, size = 15, margin = margin(r = 3)))
+
+  ggsave("day13_correlation.png", width = 30, height = 24, units = "cm")
+```

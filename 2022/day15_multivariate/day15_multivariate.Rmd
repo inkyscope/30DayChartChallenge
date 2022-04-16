@@ -1,0 +1,117 @@
+---
+title: "Untitled"
+output: html_document
+date: '2022-04-16'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(tidymodels)
+library(themis)
+library(vip)
+library(showtext)
+
+font_add_google("Bebas Neue")
+font_add_google("Saira")
+
+showtext_opts(dpi = 320)
+showtext_auto()
+
+f1 = "Bebas Neue"
+f2 = "Saira"
+
+theme_set(theme_minimal())
+```
+
+```{r}
+## personal loan, Securities Account, CD Account, Online, Credit Card: 0:N, 1:Y
+## Education: 1:Undergrad, 2:Graduate, 3: Advance/Professional
+personal_loan <- read_csv("data/personaloan.csv") %>% 
+  janitor::clean_names() %>% 
+  select(-c(id, zip_code)) 
+
+personal_loan %>% 
+  ggplot(aes(x = age, y = ..density.., fill = as.factor(personal_loan))) +
+  geom_histogram(position = "identity", alpha = 0.6) +
+  facet_wrap(~education)
+
+personal_loan %>% 
+  mutate(loan = case_when(personal_loan == 1 ~ "yes",
+                          TRUE ~ "no")) %>% 
+  ggplot(aes(y = education, fill = as.factor(personal_loan))) +
+  geom_bar(position = "fill") 
+```
+
+```{r}
+## https://juliasilge.com/blog/water-sources/
+# Build a model
+df_loan <- personal_loan %>%  
+  select(loan = personal_loan) %>% 
+  mutate(loan = as.factor(loan))
+
+df_scaled <- personal_loan %>% 
+  select(-personal_loan) %>% 
+  scale()
+
+df <- cbind(df_loan, df_scaled)
+
+set.seed(2022)
+loan_split <- initial_split(df, strata = loan)
+loan_train <- training(loan_split)
+loan_test <- testing(loan_split)
+
+set.seed(2022)
+loan_folds <- vfold_cv(loan_train, strata = loan)
+
+usemodels::use_ranger(loan ~., data = loan_train)
+
+ranger_recipe <- recipe(formula = loan ~., data = loan_train) %>% 
+  step_unknown(all_nominal_predictors()) %>% 
+  step_other(all_nominal_predictors(), threshold = 0.03) %>% 
+  step_impute_linear(age) %>% 
+  step_downsample(loan)
+
+ranger_spec <- rand_forest(trees = 1000) %>% 
+  set_mode("classification") %>% 
+  set_engine("ranger")
+
+ranger_workflow <- workflow() %>% 
+  add_recipe(ranger_recipe) %>% 
+  add_model(ranger_spec)
+
+doParallel::registerDoParallel()
+set.seed(2022)
+ranger_rs <- fit_resamples(ranger_workflow,
+                           resamples = loan_folds,
+                           control = control_resamples(save_pred = TRUE))
+
+collect_metrics(ranger_rs)
+
+collect_predictions(ranger_rs) %>% 
+  group_by(id) %>% 
+  roc_curve(loan, .pred_0) %>% 
+  autoplot()
+
+conf_mat_resampled(ranger_rs, tidy = FALSE) %>% 
+  autoplot()
+
+final_fitted <- last_fit(ranger_workflow, loan_split)
+collect_metrics(final_fitted)
+
+collect_predictions(final_fitted) %>% 
+  conf_mat(loan, .pred_class) %>% 
+  autoplot()
+
+imp_data <- ranger_recipe %>% 
+  prep() %>% 
+  bake(new_data = NULL) 
+
+ranger_spec %>% 
+  set_engine("ranger", importance = "permutation") %>% 
+  fit(loan ~., data = imp_data) %>% 
+  vip(geom = "point")
+```

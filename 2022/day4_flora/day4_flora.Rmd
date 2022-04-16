@@ -1,0 +1,96 @@
+---
+title: "day4 Flora"
+output: html_document
+date: '2022-04-14'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(ggforce)
+library(scales)
+library(paletteer)
+library(showtext)
+
+font_add_google("Economica")
+font_add_google("Fira Sans")
+
+showtext_opts(dpi = 320)
+showtext_auto()
+
+f1 = "Economica"
+f2 = "Fira Sans"
+```
+
+```{r}
+women_research <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-04-16/women_research.csv")
+
+field_avg <- women_research %>% 
+  group_by(field) %>% 
+  summarise(avg = mean(percent_women)) %>% 
+  mutate(avg = round(avg, 2)) %>% 
+  mutate(label = paste(field, avg, sep = "\n"),
+         label = case_when(label == "Computer science, maths\n0.21" ~ "Computer science,\nmath 0.21",
+                           TRUE ~ label))
+
+field_label <- c("Computer science, maths" = "COMPUTER SCIENCE,\nMATH (AVG) 21%",
+                 "Engineering" = "ENGINEERING\n24%",
+                 "Health sciences" = "HEALTH SCIENCES\n47%",
+                 "Physical sciences" = "PHYSICAL SCIENCES\n24%",
+                 "Women inventores" = "WOMEN INVESTORES\n15%")
+
+#paletteer_d("tidyquant::tq_light")
+
+pals <- c("Australia" = "#2C3E50", 
+          "Brazil" = "#FEDD00", 
+          "Canada" = "#18BC9C",
+          "Chile" = "#964B00", 
+          "Denmark" = "#A6CEE3", 
+          "EU28" = "#1F78B4", 
+          "France" = "#B2DF8A", 
+          "Japan" = "#E31A1C", 
+          "Mexico" = "#F47258", 
+          "Portugal" = "#046A38", 
+          "United Kingdom" = "#9D43A5", 
+          "United States" = "#6A3D9A")
+```
+
+```{r}
+##https://gist.github.com/leeolney3/3f1767100aeae1938a223fec92c50c9c
+
+df_plot <- women_research %>% 
+  rename(percent = percent_women) %>% 
+  mutate(id = row_number(),
+         angle = 53.37 * id,
+         radius = angle * pi /180,
+         x0 = percent * cos(radius),
+         y0 = percent * sin(radius))
+
+flora <- df_plot %>% 
+  ggplot(aes(x = percent, y = id, fill = country)) +
+  geom_ellipse(aes(x0 = x0, y0 = y0, a = percent, b = percent / pi, 
+                   angle = radius, fill = country), color = "snow1", alpha = 0.7) +
+  scale_fill_manual(values = pals,
+                    name = "") +
+  coord_fixed(clip = "off") +
+  facet_wrap(~field, nrow = 1, labeller = as_labeller(field_label)) +
+  guides(fill = guide_legend(nrow = 2)) +
+  labs(x = "", y = "",
+       title = "Women Contributors in the Global Research Papers 2011 - 2015",
+       caption = "Source: Gender in the Global Research Landscape by Elsevier\nGraphic: Sung Inkyung") +
+  theme_void() +
+  theme(legend.position = "bottom",
+        legend.text = element_text(family = f2, size = 11),
+        strip.text = element_text(family = f1, size = 15, face = "bold", color = "gray35"),
+        plot.background = element_rect(fill = "snow", color = NA),
+        plot.title = element_text(family = f1, size = 34, face = "bold", hjust = 0.5, margin = margin(b = 25)),
+        plot.caption = element_text(family = f2, size = 10, hjust = 0.95, margin = margin(t = 20)),
+        plot.margin = margin(10, 20, 10, 20))
+
+ggsave("day4_flora.png", width = 32, height = 28, units = "cm", dpi = 320)
+
+```
+

@@ -4,6 +4,9 @@ The #30DayChartChallenge was a challenge during April 2021 organized by Dominic 
 ![30 Day Chart Challenge Categories](https://github.com/inkyscope/30DayChartChallenge/blob/main/30dcc2022.jpg)
 ![30 Day Chart Challenge Categories](30dcc.jpg)
 -------------------------------------------------------------------------------------------------------------------------------
+# 2022
+<p float = "center">
+<img src="https://github.com/inkyscope/30DayChartChallenge/blob/main/2022/day1_part_to_whole/day1_part_to_whole1.png" width="10%" hspace="3"/><img src="https://github.com/inkyscope/30DayChartChallenge/blob/main/2022/day2_pictogram/day2_pictogram.png" width="10%" hspace="3"/><img src="https://github.com/inkyscope/30DayChartChallenge/blob/main/2022/day2_pictogram/day2_pictogram1.png" width="10%" hspace="3"/><img src="https://github.com/inkyscope/30DayChartChallenge/blob/main/2022/day3_historical/day3_historical.png" width="10%" hspace="3"/><img src="https://github.com/inkyscope/30DayChartChallenge/blob/main/2022/day4_flora/day4_flora.png" width="10%" hspace="3"/><img src="https://github.com/inkyscope/30DayChartChallenge/blob/main/2022/day5_slope/day5_slope.png" width="10%" hspace="3"/><img src="https://github.com/inkyscope/30DayChartChallenge/blob/main/2022/day6%20OurWorldinData/day6_OurWorldinData.png" width="10%" hspace="3"/><img src="https://github.com/inkyscope/30DayChartChallenge/blob/main/2022/day8_mountains/day8_mountains.png" width="10%" hspace="3"/><img src="https://github.com/inkyscope/30DayChartChallenge/blob/main/2022/day9_statistics/day9_statistics1.png" width="10%" hspace="3"/><img src="https://github.com/inkyscope/30DayChartChallenge/blob/main/2022/day10_experimental/day10_experimenta.png" width="10%" hspace="3"/><img src="https://github.com/inkyscope/30DayChartChallenge/blob/main/2022/day11_circular/day11_Circular.png" width="10%" hspace="3"/><img src="https://github.com/inkyscope/30DayChartChallenge/blob/main/2022/day12_TheEconomist/day12_TheEconomist.png" width="10%" hspace="3"/><img src="https://github.com/inkyscope/30DayChartChallenge/blob/main/2022/day13_correlation/day13_correlation.png" width="10%" hspace="3"/><img src="https://github.com/inkyscope/30DayChartChallenge/blob/main/2022/day15_multivariate/day15_multivariate1.png" width = "10%" hspace="3"/></p>
 
 # 2021
 <p float = "center">
@@ -13,6 +16,9 @@ The #30DayChartChallenge was a challenge during April 2021 organized by Dominic 
 # Favorites
 ### 2022 Day14 Multivariate
 ![Multivariate](https://github.com/inkyscope/30DayChartChallenge/blob/main/2022/day15_multivariate/day15_multivariate1.png)
+
+### 2022 Day11 Circular
+![Circular](https://github.com/inkyscope/30DayChartChallenge/blob/main/2022/day11_circular/day11_Circular.png)
 
 ### 2022 Day4 Flora
 ![Flora](https://github.com/inkyscope/30DayChartChallenge/blob/main/2022/day4_flora/day4_flora.png)

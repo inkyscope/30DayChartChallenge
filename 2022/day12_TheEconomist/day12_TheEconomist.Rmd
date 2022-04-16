@@ -1,0 +1,73 @@
+---
+title: "day12 The Economist"
+output: html_document
+date: '2022-04-13'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(scales)
+library(ggthemes)
+library(paletteer)
+library(showtext)
+
+font_add_google("Economica")
+font_add_google("Fira Sans")
+
+showtext_opts(dpi = 320)
+showtext_auto()
+
+f1 = "Economica"
+f2 = "Fira Sans"
+```
+
+
+```{r}
+women_research <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-04-16/women_research.csv")
+
+paletteer_d("tidyquant::tq_light")
+```
+
+```{r}
+pals <- c("Australia" = "#FFFFFF", 
+          "Brazil" = "#FEDD00", 
+          "Canada" = "#18BC9C",
+          "Chile" = "#CCBE93", 
+          "Denmark" = "#A6CEE3", 
+          "EU28" = "#1F78B4", 
+          "France" = "#B2DF8A", 
+          "Japan" = "#E31A1C", 
+          "Mexico" = "#FDBF6F", 
+          "Portugal" = "#046A38", 
+          "United Kingdom" = "#CAB2D6", 
+          "United States" = "#6A3D9A")
+
+ggplot(women_research,
+       aes(x = percent_women, y = fct_reorder(field, percent_women), group = country, color = country)) +
+  geom_line(aes(group = field), color = "black", size = 5, show.legend = FALSE) +
+  geom_point(size = 4.3) +
+  geom_vline(xintercept = 0.5,  color = "firebrick4",  size = 0.4) +
+  scale_x_continuous(limits = c(0, 0.6),
+                     breaks = seq(0, 0.6, 0.1),
+                     labels = c("0", "10", "20", "30", "40", "50%", "60")) +
+  scale_color_manual(values = pals, name = "") +
+  guides(colour = guide_legend(nrow = 2)) +
+  labs(x = "", y = "",
+       title = "Women Contributors in the Global Research Papers 2011 - 2015",
+       caption = "Source: Gender in the Global Research Landscape by Elsevier\nGraphic: Sung Inkyung") +
+  theme_economist() +
+  theme(legend.position = "top",
+        legend.text = element_text(family = f2, size = 10),
+        plot.title = element_text(family = f1, size = 30, hjust = 0.5, margin = margin(b = 15)),
+        plot.caption = element_text(family = f2, size = 8, hjust = 1),
+        axis.text.y = element_text(family = f2, size = 13),
+        axis.text.x = element_text(family = f2, size = 11),
+        plot.margin = margin(10, 20, 20, 20))
+
+ggsave("day12_TheEconomist.png", width = 32, height = 20, units = "cm")
+```
+

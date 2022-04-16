@@ -11,23 +11,31 @@ The #30DayChartChallenge was a challenge during April 2021 organized by Dominic 
 </p>
 
 # Favorites
+### 2022 Day14 Multivariate
+![Multivariate](https://github.com/inkyscope/30DayChartChallenge/blob/main/2022/day15_multivariate/day15_multivariate1.png)
 
-### Day25 Demographic
+### 2022 Day4 Flora
+![Flora](https://github.com/inkyscope/30DayChartChallenge/blob/main/2022/day4_flora/day4_flora.png)
+
+### 2022 Day2 Pictogram
+![Pictogram](https://github.com/inkyscope/30DayChartChallenge/blob/main/2022/day2_pictogram/day2_pictogram.png)
+
+### 2021 Day25 Demographic
 ![Demographic](https://github.com/inkyscope/30DayChartChallenge/blob/main/day25/day25_demographic.png)
 
-### Day24 Monochrome
+### 2021 Day24 Monochrome
 ![Monochrome](https://github.com/inkyscope/30DayChartChallenge/blob/main/day24/day24_monochrome.png)
 
-### Day21 Downwards
+### 2021 Day21 Downwards
 ![Downwards](https://github.com/inkyscope/30DayChartChallenge/blob/main/day21/day21_Downwards.png)
 
-### Day15 Multivariate
+### 2021 Day15 Multivariate
 ![Multivariate](https://github.com/inkyscope/30DayChartChallenge/blob/main/day15/day15_Multivarate.png)
 
-### Day13 Correlation
+### 2021 Day13 Correlation
 ![Correlation](https://github.com/inkyscope/30DayChartChallenge/blob/main/day13/day13_Correlation.png)
 
-### Day9 Statistics
+### 2021 Day9 Statistics
 ![Statistics](https://github.com/inkyscope/30DayChartChallenge/blob/main/day9/day9_Statistics.png)
 
 ### Day6 Experimental

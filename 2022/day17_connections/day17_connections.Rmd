@@ -1,0 +1,105 @@
+---
+title: "day 17 Connection"
+output: html_document
+date: '2022-04-17'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dslabs)
+library(tidyverse)
+library(GGally)
+library(ggtext)
+library(showtext)
+
+font_add_google("Titillium Web")
+font_add_google("Libre Franklin")
+
+showtext_opts(dpi = 320)
+showtext_auto()
+
+f1 = "Titillium Web"
+f2 = "Libre Franklin"
+```
+
+```{r}
+##https://r-charts.com/ranking/parallel-coordinates-ggplot2/
+olives <- olive 
+
+df_plot <- olives %>% 
+  pivot_longer(-c(region, area)) %>% 
+  group_by(region, area, name) %>% 
+  summarise(avg = mean(value)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = name, values_from = avg)
+
+pals <- c("Northern Italy" = "#CD212A",
+          "Sardinia" = "#F4F9FF",
+          "Southern Italy" = "#008C45")
+
+plot <- ggparcoord(df_plot, 
+           groupColumn = "region", 
+           columns = c(3:10), 
+           showPoints = TRUE,
+           alphaLines = 0.6) +
+  scale_color_manual(values = pals) +
+  guides(color = guide_legend(override.aes = list(size = 2.3))) +
+  geom_hline(yintercept = 0, size = 0.4, color = "gray15") +
+  annotate("rect", xmin = 1.5, xmax = 2.5, ymin = -2.5, ymax = 2.5, alpha = .2, fill = "gray") +
+  annotate("rect", xmin = 3.5, xmax = 4.5, ymin = -2.5, ymax = 2.5, alpha = .2, fill = "gray") +
+  labs(x = "",
+       y = "",
+       color = "",
+       title = "Average Acidity of Olive Oil by Regions in Italy",
+       subtitle = "It explores the composition in the percentage of eight fatty acids found in the 572 Italian olive oils;<br> **Eicosenoic** and **linolenic** acid in the shaded rectangles seem to allow for some degree of separation<br> between Northern and Southern Italy.",
+       caption = "Source: {dslab} | Graphic: Sung Inkyung") +
+  theme(legend.position = "top",
+        legend.background = element_rect(fill = "#8A9A5B", color = NA),
+        legend.text = element_text(family = f2, size = 13, color = "#263318"),
+        legend.key = element_rect(fill = "#8A9A5B", color = NA),
+        plot.background = element_rect(fill = "#8A9A5B", color = NA),
+        panel.background = element_rect(fill = "#8A9A5B", color = NA),
+        plot.title = element_text(family = f1,size = 30, face = "bold", hjust = 0.5,  color = "#263318", margin = margin(b = 9)),
+        plot.subtitle = element_markdown(family = f2, size = 12, hjust = 0.5,  lineheight = 1.1, color = "#263318", margin = margin(b = 10)),
+        plot.caption = element_text(family = f1,size = 10, hjust = 0.5, color = "#263318"),
+        axis.text.x = element_text(family = f1,size = 13, face = "bold"),
+        axis.text.y = element_text(family = f1,size = 12, face = "bold", color = "#D8E4BC"),
+        axis.ticks = element_blank(),
+        panel.grid = element_blank(),
+        plot.margin = margin(20, 20, 20, 20))
+
+ggsave("day17_connections.png", width = 30, height = 21, units = "cm")
+```
+
+```{r}
+# All acid types
+plot_all <- ggparcoord(olives, 
+           groupColumn = "region", 
+           columns = c(3:10), 
+           alphaLines = 0.3,
+           splineFactor = TRUE) +
+  scale_color_manual(values = pals) +
+ # facet_wrap(~region) +
+  guides(color = guide_legend(override.aes = list(size = 1.5))) +
+  geom_hline(yintercept = 0, size = 0.4, color = "#D8E4BC") +
+  labs(x = "",
+       y = "",
+       color = "",
+       title = "Acidity of Olive Oil by Regions in Italy",
+       caption = "Source: {dslab} | Graphic: Sung Inkyung") +
+  theme(legend.position = "top",
+        legend.background = element_rect(fill = "#8A9A5B", color = NA),
+        legend.text = element_text(size = 13, color = "#263318"),
+        legend.key = element_rect(fill = "#8A9A5B", color = NA),
+        plot.background = element_rect(fill = "#8A9A5B", color = NA),
+        panel.background = element_rect(fill = "#8A9A5B", color = NA),
+        plot.title = element_text(size = 28, color = "#263318"),
+        plot.caption = element_text(size = 11, color = "#263318"),
+        axis.text = element_text(size = 11, color = "#D8E4BC"),
+        axis.ticks = element_blank(),
+        panel.grid = element_blank(),
+        plot.margin = margin(20, 20, 20, 20))
+```

@@ -1,0 +1,83 @@
+---
+title: "day16 environment"
+output: html_document
+date: '2022-04-18'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+## https://github.com/jkaupp/30DayChartChallenge/blob/master/day11/R/day11.R
+
+library(tidyverse)
+library(MetBrewer)
+library(showtext)
+
+font_add_google("Teko")
+font_add_google("Arvo")
+font_add_google("Cairo")
+
+showtext_opts(dpi = 320)
+showtext_auto()
+
+f1 = "Teko"
+f2 = "Arvo"
+f3 = "Cairo"
+
+indoor_pollution <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-04-12/indoor_pollution.csv') %>% 
+  rename(value = "Deaths - Cause: All causes - Risk: Household air pollution from solid fuels - Sex: Both - Age: Age-standardized (Percent)") %>% 
+  janitor::clean_names()
+
+df <- indoor_pollution %>% 
+  filter(code != "NA",
+         year >= 2000) %>% 
+  group_by(entity) %>% 
+  mutate(prc = 100 * ((min(value) - max(value)) / abs(max(value))),
+         prc = round(prc, 1),
+         value = round(value, 1)) %>% 
+  mutate(entity = reorder(entity, desc(entity))) %>% 
+  ungroup()
+
+death <- tibble(cause = "Indoor Air Pollution",
+                x = 2009, xend = x, y = 1, yend = 205)
+
+plot <- ggplot(df, aes(x = year, y = entity, fill = abs(prc))) +
+  geom_tile(color = "white", size = 0.15) +
+  geom_segment(data = death, 
+               aes(x = x, xend = xend, y = y, yend = yend), color = "black", size = 0.8, inherit.aes = FALSE) +
+  annotate(geom = "text", x = 2009.2, y = 220, label = "Globally, the death rate due to indoor air pollution\nhas been decreasing by 43.8%", color = "#31c7ba",
+           size = 2.5, hjust = 0, family = f2) +
+  scale_x_continuous(breaks = c(2000, 2005, 2010, 2015, 2019),
+                     expand = c(0, 0)) +
+  scale_fill_gradientn("Decrease Rate of Death",
+                       colors = met.brewer("Peru1"),
+                       limits = c(0, 100),
+                       breaks = seq(0, 100, 20),
+                       labels = c("0", "20", "40", "60", "80", "100%")) +
+  guides(fill = guide_colorbar(title.position = "top")) +
+  coord_polar() +
+  labs(x = "",
+       y = "",
+       title = "DEATH RATES FROM INDOOR AIR POLUUION",
+       subtitle = "205 countries are reflected between 2000 - 2019",
+       caption = "Source: Our World in Data | Graphic: Sung Inkyung") +
+  theme_minimal() +
+  theme(legend.position = c(0.1, 0.9),
+        legend.direction = "horizontal",
+        legend.key.width = unit(8, "mm"),
+        legend.key.height = unit(2, "mm"),
+        legend.title = element_text(family = f2, size = 8, color = "snow1"),
+        legend.text = element_text(family = f2, size = 7, color = "snow1"),
+        panel.background = element_rect(fill = "gray10", color = NA),
+        plot.background = element_rect(fill = "gray10", color = NA),
+        plot.title = element_text(family = f1, size = 28, color = "snow1"),
+        plot.subtitle = element_text(family = f2, size = 13, color = "snow1"),
+        plot.caption = element_text(family = f3, size = 9, color = "snow1"),
+        panel.grid = element_blank(),
+        axis.text.y = element_blank(),
+        axis.text.x = element_text(family = f2, size = 9,color = "snow1"))
+
+ggsave("day16_environment.png", width = 20, height = 20, units = "cm")
+```

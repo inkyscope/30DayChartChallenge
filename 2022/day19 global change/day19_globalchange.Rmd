@@ -1,0 +1,107 @@
+---
+title: "day19 global change"
+output: html_document
+date: '2022-04-19'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(ggtext)
+library(ggalt)
+library(showtext)
+
+font_add_google("Teko")
+font_add_google("Arvo")
+font_add_google("Cairo")
+
+showtext_opts(dpi = 320)
+showtext_auto()
+
+f1 = "Teko"
+f2 = "Arvo"
+f3 = "Cairo"
+
+indoor_pollution <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-04-12/indoor_pollution.csv') %>% 
+  rename(value = "Deaths - Cause: All causes - Risk: Household air pollution from solid fuels - Sex: Both - Age: Age-standardized (Percent)") %>% 
+  janitor::clean_names()
+
+max_death <- indoor_pollution %>% 
+  filter(code != "NA") %>% 
+  select(-code) %>% 
+  filter(year == 2019) %>%  
+  slice_max(value, n = 22) %>% 
+  distinct(entity)
+
+country <- c("Solomon Islands", "Papua New Guinea", "Somalia", "Vanuatu", "Niger", "Madagascar", "Laos", "Burundi", "Chad", "Timor", "Haiti", "Guinea", "Guinea-Bissau", "Burkina Faso", "Cambodia", "North Korea", "Ethiopia", "Democratic Republic of Congo", "Sierra Leone", "North Korea", "Gambia", "Mali")
+
+df <- indoor_pollution %>% 
+  filter(entity %in% country) %>% 
+  select(-code)
+```
+
+```{r}
+## https://github.com/jkaupp/tidytuesdays/blob/master/2019/week42/R/analysis.R
+
+top <- df %>% 
+  group_by(entity) %>% 
+  count(entity, year) %>% 
+  count(entity) %>% 
+  filter(n == 30)
+
+df_plot <- df %>% 
+  select(year, entity, value) %>% 
+  semi_join(top) %>% 
+  group_by(year, entity) %>% 
+  summarise(avg = mean(value)) %>% 
+  group_by(year) %>% 
+  mutate(rank = min_rank(desc(avg))) %>% 
+  ungroup() %>% 
+  mutate(size = if_else(entity == "North Korea", 1, 0.5),
+         entity = factor(entity, pull(top, entity)),
+         entity = fct_relevel(entity, "North Korea", after = Inf),
+         entity = fct_recode(entity, "**North Korea**" = "North Korea"))
+
+grid <- tibble(rank = 1:22)
+
+colors <- set_names(grey.colors(22), pull(top, entity) %>%
+                      factor() %>%
+                      fct_recode("**North Korea**" = "North Korea"))
+
+colors[["**North Korea**"]] <- "#31C7BA"
+  
+plot <- ggplot(df_plot, aes(x = year, y = rank)) +
+  geom_segment(data = grid, aes(x = 1990, xend = 2019, y = rank, yend = rank),
+               color = "#CCCCCC", alpha = 0.5, size = 0.1) +
+  geom_xspline(aes(color = entity, size = size), show.legend = FALSE) +
+  geom_point(aes(fill = entity), shape = 21, color = "white", show.legend = FALSE) +
+  geom_richtext(data = filter(df_plot, year == 2019),
+                aes(label = as.character(entity), x = 2019.5, color = entity), 
+                hjust = 0, family = f2, size = 4, show.legend = FALSE, fill = NA, label.color = NA, 
+                label.padding = grid::unit(rep(0, 4), "pt")) +
+  geom_text(data = filter(df_plot, year == 1990), 
+            aes(label = rank, x = 1989.5), hjust = 1, family = f1, size = 7) +
+  labs(x = "", y = "",
+       title = "Countries Most Vulnerable to Indoor Air Pollution",
+       subtitle = "Illustrated below is a ranking chart of average death percentage attributed to indoor air pollution from 1990 to 2019.<br><span style = 'color:#31C7BA'>**North Korea**</span> shows an unstable situation, but it has been gradually improving in recent years.",
+       caption = "Source:TidyTeusday2022 Week15 | Graphic: Sung Inkyung") +
+  scale_color_manual(values = colors) +
+  scale_fill_manual(values = colors) +
+  scale_size_identity() +
+  scale_x_continuous(breaks = 1990:2019) +
+  scale_y_continuous(trans = "reverse", breaks = NULL) +
+  expand_limits(x = 2025) +
+  theme_minimal() +
+  theme(plot.backgroun = element_rect(fill = "gray97", color = NA),
+        panel.backgroun = element_rect(fill = "gray97", color = NA),
+        plot.title = element_text(family = f1, size = 36),
+        plot.subtitle = element_markdown(family = f2, size = 16, lineheight = 1.1),
+        plot.caption = element_text(family = f3, size = 11, hjust = 0.964, color = "gray15"),
+        axis.text.x = element_text(family = f2, size = 9),
+        plot.margin = margin(15, 10, 10, 10))
+
+ggsave("day19_globalchange.png", width = 42, height = 28, units = "cm")
+```

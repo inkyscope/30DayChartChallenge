@@ -1,0 +1,33 @@
+﻿type,country,1990,2000,2005,2010,2015,2016,2017,2018,2019
+all technology patents,OECD,114774.2,223695.47,267302.6,264590.97,288597.6,289397.57,293850.36,297484.96,290637.4
+all technology patents,Korea,1143.75,8061.58,23015.42,27117.43,35113.2,33393.39,32359.05,34148.15,37453.54
+environment technology,OECD,8189.43,16750.33,22801.5,34697.13,35476.17,35951.16,36179.96,34633.65,30305.95
+environment technology,Korea,52.83,519.5,1890.43,3834.95,4684.47,5123.33,4692.59,4633.78,4480.33
+Sustainable ocean economy,OECD,188,307.33,503.33,2852.88,831.5,847.83,823.83,1615.35,633.08
+Sustainable ocean economy,Korea,0.5,13,33,1001.5,144.75,122.67,99.33,476.2,92.75
+Ocean renewable energy generation,OECD,15,52.5,147.67,1038.38,278,286.33,293,504,234.17
+Ocean renewable energy generation,Korea,0,1,8,277,45.5,33.67,35.83,111,18
+Offshore wind energy,OECD,0,21,40,231,71.5,90,125.5,164.5,120.67
+Offshore wind energy,Korea,0,1,1,44,4,5.17,8,15,8
+Offshore solar energy,OECD,1,1,1,22,19,27.33,24,47,16
+Offshore solar energy,Korea,0,0,0,12,4,7,7.5,35.5,4
+"Tide, wave, current and other marine energy",OECD,15,32.5,117.67,785.38,203.5,181,166.5,292.5,112.5
+"Tide, wave, current and other marine energy",Korea,0,1,8,221,40.5,23.5,23.33,60.5,6
+Ocean pollution abatement,OECD,91,74.17,102.5,804.25,146.25,159.5,138.17,257,104
+Ocean pollution abatement,Korea,0.5,2,2,255.5,26,34,34.5,75,17.5
+Ballast water treatment,OECD,6,12.5,36,226,72.75,75,56.17,97,31.5
+Ballast water treatment,Korea,0,1,2,138.5,19,25,17,37,6
+Oil spill (and other floating debris) prevention and cleanup,OECD,85,61.67,67.5,578.25,73.5,85.5,85,160,75.5
+Oil spill (and other floating debris) prevention and cleanup,Korea,0.5,1,30.5,117,7,9,19.5,38,12.5
+Climate change mitigation in maritime transport,OECD,14,35,55.33,323.67,135.75,106.67,89.5,137.33,63
+Climate change mitigation in maritime transport,Korea,..,4,10,175,40,26,11.5,33,16
+Improved vessel design,OECD,12,28,27,182.67,70.75,51.67,30,68.67,18
+Improved vessel design,Korea,0,2,6,120,19,14,2,19,3
+Fuel-efficient propulsion or fuel substitution,OECD,2,7,28.33,141,68,56,60.5,68.67,45
+Fuel-efficient propulsion or fuel substitution,Korea,0,2,4,55,21,12,9.5,14,13
+"Climate change mitigation and adaptation in fishing, aquaculture and aquafarming",OECD,22,51.67,78.83,323.33,135,151.5,184.33,424.25,133
+"Climate change mitigation and adaptation in fishing, aquaculture and aquafarming",Korea,2,2,10,176,16,20,6,189,25
+Desalination of sea water,OECD,19,53,93.5,238.25,113.25,104.83,96.67,175.93,81.92
+Desalination of sea water,Korea,0,6,1.5,58,15.75,14,7,23.2,8.25
+Climate change adaptation in coastal zones,OECD,27,45,37.5,125,52,64,47.67,116.83,37
+Climate change adaptation in coastal zones,Korea,0,8,2.5,60,7.5,7,7.5,45,12

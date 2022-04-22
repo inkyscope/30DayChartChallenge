@@ -1,0 +1,83 @@
+---
+title: "day21 up|down"
+output: html_document
+date: '2022-04-22'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(ggtext)
+library(ggstream)
+library(lubridate)
+library(scales)
+library(MetBrewer)
+library(showtext)
+
+font_add_google("Oswald")
+font_add_google("Saira")
+
+showtext_opts(dpi = 320)
+showtext_auto()
+
+f1 = "Oswald"
+f2 = "Saira"
+```
+
+```{r}
+ocean_economy <- read.csv("data/sustainable_ocean_economy_korea.csv")
+
+names(ocean_economy) <- sub("^X", "", names(ocean_economy))
+
+df <- ocean_economy %>% 
+  mutate(type = str_to_title(type)) %>% 
+  mutate("1990" = as.integer(1990)) %>% 
+  pivot_longer(!c(type, country), names_to = "year", values_to = "count") %>% 
+  filter(year >= 2000) %>% 
+  mutate(count = as.integer(count),
+         count = as.numeric(count),
+         year = as.numeric(year))
+
+df %>%
+  ggplot(aes(x = year, y =  count, group = country, color = country)) +
+  geom_line() +
+  scale_y_log10() +
+  facet_wrap(~type, scales = "free") +
+  theme_minimal()
+```
+
+```{r}
+plot <- df %>% 
+  filter(country == "Korea") %>% 
+  filter(type %in% c("Ballast Water Treatment", "Desalination Of Sea Water", "Ocean Pollution Abatement", "Ocean Renewable Energy Generation", "Oil Spill (And Other Floating Debris) Prevention And Cleanup", "Sustainable Ocean Economy", "Tide, Wave, Current And Other Marine Energy")) %>% 
+  ggplot(aes(year, log10(count), fill = type, label = str_wrap(type, 21), color = type)) +
+  geom_stream(extra_span = 0.013, bw = .78) +
+  geom_stream_label(family = f2, size = 4.5, color = "snow1") +
+  scale_color_manual(values = met.brewer("Pissaro")) +
+  scale_fill_manual(values = met.brewer("Pissaro")) +
+  scale_x_continuous(breaks = c(seq(2000, 2015, 5), 2019)) +
+  scale_y_continuous(labels = label_number_si(), position = "right") +
+  labs(x = "",
+       y = "Number of patents (log10)",
+       title = "Number of Sustainable Ocean Economy-related Patents\nissued in South Korea since 2000",
+       caption = "Source: OECD | Graphic: Sung Inkyung") +
+  theme(legend.position = "none",
+        plot.background = element_rect(fill = "#555665", color = NA),
+        panel.background = element_rect(fill = "#555665", color = NA),
+        plot.title = element_text(family = f1, size = 34, face = "bold", hjust = 0, color = "gray85"),
+        plot.caption = element_text(family = f2, size = 13, hjust = 0, color = "gray75", margin = margin(t = 20)),
+        axis.title.y.right = element_text(family = f2, size = 15, color = "gray85"),
+        axis.text.x = element_text(family = f2, size = 16, color = "gray85"),
+        axis.text.y = element_text(family = f2, size = 16, color = "gray85"),
+        panel.grid.major.x = element_line(size = 0.3, color = "gray75"),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(20, 20, 20, 20))
+
+ggsave("day21_updown.png", width = 48, height = 32, units = "cm")
+
+```
+

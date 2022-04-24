@@ -1,0 +1,99 @@
+---
+title: "day18 OECD"
+output: html_document
+date: '2022-04-20'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+## coding credit: https://github.com/gkaramanis/30DayChartChallenge/blob/master/2022/day_18-OECD/day_18-oecd_legal.R
+## data: https://stats.oecd.org/Index.aspx?DataSetCode=LAND_COVER
+library(tidyverse)
+library(ggtext)
+library(patchwork)
+library(showtext)
+
+font_add_google("Titillium Web")
+font_add_google("Oxygen")
+
+showtext_opts(dpi = 320)
+showtext_auto()
+
+f1 = "Titillium Web"
+f2 = "Oxygen"
+```
+
+```{r}
+oecd_countries <- c("Australia", "Austra", "Belgium", "Canada", "Chile", "Colombia", "Costa Rica", "Czech Republic", "Denmark", "Estonia", "Finland", "France", "Germany", "Greece", "Hungary", "Iceland", "Ireland", "israel", "Italy", "Japan", "Korea", "Latvia", "Lithuania", "Luxembourg", "Mexico", "Nethelands", "New Zealand", "Norway", "Poland", "Prtugal", "Sloval Republic", "Slovenia", "Spain", "Sweden", "Turkey", "United Kingdom", "United States", "OECD - Total")
+
+#grassland
+landcover <- read.csv("~/Documents/projectR/30DayChartChallenge/data/landcover_oecd.csv") %>% 
+  janitor::clean_names() %>% 
+  filter(measure == "Percent of total country area",
+         country %in% oecd_countries,
+         year == c(2004, 2019)) %>% 
+  select(country, year, class = land_cover_class, prc = value) %>% 
+  mutate(country = case_when(country == "OECD - Total" ~ "OECD",
+                             TRUE ~ country)) %>% 
+  filter(class == "Grassland")
+
+p1 <- ggplot() +
+  geom_col(data = landcover %>% filter(year == 2019) %>% 
+             mutate(country = fct_reorder(country, prc)), aes(prc, country, fill = if_else(country != "OECD", "#32A852", "#8055AA")), width = 0.8) +
+  geom_col(data = landcover %>% filter(year == 2004)%>% 
+             mutate(country = fct_reorder(country, prc)), aes(prc, country, fill = if_else(country != "OECD", "#2D4A3D", "#999FFF")), width = 0.3) +
+  scale_fill_identity() +
+  scale_x_continuous(labels = scales::percent_format(accuracy = 1, scale = 1),
+                     expand = c(0.01, 0.01)) +
+  labs(x = "", y = "", 
+       title = "Grassland Coverage in OECD countries <span style = 'color:#2D4A3D'>2004</span> vs <span style = 'color:#32A852'>2019</span>") +
+  theme_minimal() +
+  theme(plot.background = element_rect(fill = "snow2", color = NA),
+        plot.title = element_markdown(family = f1, face = "bold"),
+        axis.text.y = element_text(family = f1, size = 12),
+        axis.text.x = element_text(family = f1, size = 10),
+        plot.margin = margin(20, 30, 20, 30))
+  
+# cropland
+landcover <- read.csv("~/Documents/projectR/30DayChartChallenge/data/landcover_oecd.csv") %>% 
+  janitor::clean_names() %>% 
+  filter(measure == "Percent of total country area",
+         country %in% oecd_countries,
+         year == c(2004, 2019)) %>% 
+  select(country, year, class = land_cover_class, prc = value) %>% 
+  mutate(country = case_when(country == "OECD - Total" ~ "OECD",
+                             TRUE ~ country)) %>% 
+  filter(class == "Cropland")
+
+p2 <- ggplot() +
+  geom_col(data = landcover %>% filter(year == 2019) %>% 
+             mutate(country = fct_reorder(country, prc)), aes(prc, country, fill = if_else(country != "OECD", "#CC9966", "#8055AA")), width = 0.8) +
+  geom_col(data = landcover %>% filter(year == 2004)%>% 
+             mutate(country = fct_reorder(country, prc)), aes(prc, country, fill = if_else(country != "OECD", "#80471C", "#999FFF")), width = 0.3) +
+  scale_fill_identity() +
+  scale_x_continuous(labels = scales::percent_format(accuracy = 1, scale = 1),
+                     expand = c(0.01, 0.01)) +
+  labs(x = "", y = "", 
+       title = "Cropland Coverage in OECD countries <span style = 'color:#80471C'>2004</span> vs <span style = 'color:#CC9966'>2019</span>") +
+  theme_minimal() +
+  theme(plot.background = element_rect(fill = "snow2", color = NA),
+        plot.title = element_markdown(family = f1, face = "bold"),
+        plot.subtitle = element_text(family = f2),
+        plot.caption = element_text(family = f2),
+        axis.text.y = element_text(family = f1, size = 12),
+        axis.text.x = element_text(family = f1, size = 10),
+        plot.margin = margin(20, 30, 20, 30))
+```
+
+```{r}
+patchwork <- p1 + p2
+patchwork + plot_annotation(caption = "Source: OECD | Graphic: Sung Inkyung") &
+  theme(plot.background = element_rect(fill = "snow2", color = NA),
+        plot.caption = element_text(family = f2, size = 9))
+
+ggsave("day18_OECD.png", width = 38, height = 18, units = "cm")
+```
+

@@ -1,0 +1,183 @@
+---
+title: "day30 UN population"
+output: html_document
+date: '2022-04-30'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(ggtext)
+library(ggrepel)
+library(showtext)
+
+font_add_google("Staatliches")
+font_add_google("Fira Sans Condensed")
+font_add_google("Saira Condensed")
+showtext_opts(dpi = 320)
+showtext_auto()
+
+f1 = "Staatliches"
+f2 = "Fira Sans Condensed"
+f3 = "Saira Condensed"
+
+theme_set(theme_minimal())
+```
+
+```{r}
+rural_growth <- read_csv("~/Documents/projectR/30DayChartChallenge/2022/day30_UNpopulation/data/WUP2018-F07-Rural_Growth_Rate.csv") %>% 
+  rename(country = "Region, subregion, country or area") %>% 
+  select(-Note)
+```
+
+```{r}
+nato_table <- tribble(
+  ~country, ~year,
+  'Albania', 2009,
+  'Belgium', 1949,
+  'Bulgaria', 2004,
+  'Canada', 1949,
+  'Croatia', 2009,
+  'Czech Republic', 1999, 
+  'Denmark', 1949,
+  'Estonia', 2004,
+  'France', 1949,
+  'Germany', 1955,
+  'Greece', 1952,
+  'Hungary', 1999,
+  'Iceland', 1949,
+  'Italy', 1949,
+  'Latvia', 2004,
+  'Lithuania', 2004,
+  'Luxembourg', 1949,
+  'Montenegro', 2017,
+  'Netherlands', 1949,
+  'North Macedonia', 2020,
+  'Norway', 1949,
+  'Poland', 1999,
+  'Portugal', 1949,
+  'Romania', 2004,
+  'Slovakia', 2004,
+  'Slovenia', 2004,
+  'Spain', 1982,
+  'Turkey', 1952,
+  'United Kingdom', 1949,
+  'United States', 1949)
+
+nato_countries <- nato_table %>% 
+  arrange(year) %>% 
+  pull(country)
+
+nato_votes <- df_full %>% 
+  mutate(country = str_replace(country, "Czech Republic", "Czechoslovakia")) %>% 
+  filter(country %in% nato_countries) %>% 
+  mutate(country = fct_relevel(country, nato_countries)) %>% 
+  group_by(country, issue) %>% 
+  summarize_votes() %>% 
+  filter(issue != "na") %>% 
+  ungroup()
+
+rural_growth %>% 
+  filter(country %in% nato_countries) %>% 
+  pull(country)
+```
+
+```{r}
+df_plot <- rural_growth %>% 
+  pivot_longer(cols = c(`1950-1955`:`2045-2050`), names_to = "year", values_to = "percent") %>% 
+  filter(country %in% nato_countries,
+         year %in% c("1970-1975", "2015-2020")) %>% 
+  group_by(country) %>% 
+  mutate(diff = diff(percent)) %>% 
+  mutate(color = if_else(diff >= 0, "#32A852", "gray10"),
+         alpha = if_else(diff >= 0, 1, 0.3),
+         size = if_else(diff >= 0, 1, 0.5))
+
+df_plot %>% 
+  group_by(country) %>% 
+  filter(diff >= 0) %>% 
+  arrange(-percent) %>% 
+  distinct(country, .keep_all = T)
+  pull(country)
+```
+
+
+```{r}
+## https://github.com/jkaupp/tidytuesdays/blob/master/2020/week46/R/analysis.R
+## https://ggrepel.slowkow.com/articles/examples.html
+
+plot <- ggplot(df_plot, aes(x = year, y = percent)) +
+  geom_path(aes(group = country, color = color, alpha = alpha, size = size)) +
+  geom_point(aes(group = country, color = color, alpha = alpha)) +
+  geom_text_repel(data = filter(df_plot, year == last(year), size == 1) %>% 
+                    arrange(desc(percent)), 
+                  aes(label = country, color = color, x = "2015-2020"),  family = f2, size = 4.5,
+                  force = 0.5, nudge_x = 0.07, direction = "y", hjust = 0, segment.size = 0.2, segment.curvature = -0.1) +
+  scale_x_discrete(breaks = c("1970-1975", "2015-2020"),
+                   limits = c("1970-1975", "2015-2020")) +
+  scale_y_continuous(expand = c(0.01, 0),
+                     labels = scales::percent) +
+  scale_color_identity() +
+  scale_alpha_identity() +
+  scale_size_identity() +
+  labs(x = "", y = "",
+       title = "Average Annual Rate of Change of the Rural Population in Nato Members",
+       subtitle = "Nato Members with stable or gain in rural population 1970 - 2020",
+       caption = "Source: UN Word Urbanization Prospects | Graphic: Sung Inkyung") +
+  theme(plot.background = element_rect(fill = "#FFF6E5", color = NA),
+        panel.background = element_rect(fill = "#FFF6E5", color = NA),
+        plot.title = element_text(family = f1, size = 21, hjust = 0.5,  margin = margin(b = 7)),
+        plot.subtitle = element_text(family = f2, size = 15, hjust = 0.5, margin = margin(b = 7)),
+        plot.caption = element_markdown(family = f3, size = 11, hjust = 0.5, color = "gray35", margin = margin(t = 20)),
+        axis.text.x = element_text(family = f1, size = 15),
+        axis.ticks = element_blank(),
+        plot.margin = margin(15, 15, 15, 15))
+
+ggsave("day30_UNpopulation.png", width = 24, height = 30, units = "cm")
+```
+
+```{r}
+df_rural_drop <- rural_growth %>% 
+  pivot_longer(cols = c(`1950-1955`:`2045-2050`), names_to = "year", values_to = "percent") %>% 
+  filter(country %in% nato_countries,
+         year %in% c("1970-1975", "2015-2020")) %>% 
+  group_by(country) %>% 
+  mutate(diff = diff(percent)) %>% 
+  mutate(color = if_else(diff >= -1, "gray10", "#FA003F"),
+         alpha = if_else(diff >= -1, 0.3, 1),
+         size = if_else(diff >= -1, 0.5, 1))
+
+plot_rural_drop <- ggplot(df_rural_growth, aes(x = year, y = percent)) +
+  geom_path(aes(group = country, color = color, alpha = alpha, size = size)) +
+  geom_point(aes(group = country, color = color, alpha = alpha)) +
+  geom_text_repel(data = filter(df_rural_growth, year == last(year), size == 1) %>% 
+                    arrange(desc(percent)), 
+                  aes(label = country, color = color, x = "2015-2020"),  family = f2, size = 4.5,
+                  force = 0.5, nudge_x = 0.07, direction = "y", hjust = 0, segment.size = 0.2, segment.curvature = -0.1) +
+  scale_x_discrete(breaks = c("1970-1975", "2015-2020"),
+                   limits = c("1970-1975", "2015-2020")) +
+  scale_y_continuous(expand = c(0.01, 0),
+                     labels = scales::percent) +
+  scale_color_identity() +
+  scale_alpha_identity() +
+  scale_size_identity() +
+  labs(x = "", y = "",
+       title = "Average Annual Rate of Change of the Rural Population in Nato Members",
+       subtitle = "Nato Members with a significan lost (over 100%) in rural population 1970 - 2020",
+       caption = "Source: UN Word Urbanization Prospects | Graphic: Sung Inkyung") +
+  theme(plot.background = element_rect(fill = "#FFF6E5", color = NA),
+        panel.background = element_rect(fill = "#FFF6E5", color = NA),
+        plot.title = element_text(family = f1, size = 21, hjust = 0.5,  margin = margin(b = 7)),
+        plot.subtitle = element_text(family = f2, size = 15, hjust = 0.5, margin = margin(b = 7)),
+        plot.caption = element_markdown(family = f3, size = 11, hjust = 0.5, color = "gray35", margin = margin(t = 20)),
+        axis.text.x = element_text(family = f1, size = 15),
+        axis.ticks = element_blank(),
+        plot.margin = margin(15, 15, 15, 15))
+
+ggsave("day30_UNpopulation1.png", width = 24, height = 30, units = "cm")
+
+```
+

@@ -1,0 +1,119 @@
+---
+title: "day28 deviation"
+output: html_document
+date: '2022-04-27'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(scales)
+library(ggstream)
+library(patchwork)
+library(showtext)
+
+font_add_google("Anton")
+font_add_google("Fira Sans")
+font_add_google("Saira")
+
+showtext_opts(dpi = 320)
+showtext_auto()
+
+f1 = "Anton"
+f2 = "Fira Sans"
+f3 = "Saira"
+
+theme_set(theme_minimal())
+```
+
+
+```{r}
+unvotes <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-03-23/unvotes.csv')
+roll_calls <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-03-23/roll_calls.csv')
+issues <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-03-23/issues.csv')
+```
+
+```{r}
+df_full <- reduce(list(unvotes, roll_calls, issues), left_join) %>% 
+  mutate(vote_number = match(vote, c("no", "abstain", "yes")) - 2,
+         year = year(date)) %>% 
+  select(rcid, country, country_code, year, vote, vote_number, short, descr, issue)
+
+summarize_votes <- function(tbl, min_votes = 10){
+  tbl %>% 
+    summarise(n_votes = n(),
+              n_yes = sum(vote == "yes"),
+              n_no = sum(vote == "no"),
+              n_abstain = sum(vote == "abstain"),
+              pct_yes = n_yes / n_votes,
+              pct_no = n_no / n_votes,
+              pct_abstain = n_abstain / n_votes,
+              .groups = "drop") %>% 
+    filter(n_votes >= 10) %>% 
+    arrange(desc(pct_yes))
+}
+```
+
+```{r}
+df_korea <- df_full %>% 
+  group_by(year, country) %>% 
+  summarize_votes() %>% 
+  filter(country %in% c("South Korea", "North Korea")) %>% 
+  select(year, country, pct_yes, pct_no, pct_abstain) %>% 
+  pivot_longer(-c(year, country), names_to = "vote") %>% 
+  mutate(vote = str_replace(vote, "pct_", ""))
+```
+
+```{r}
+cols <- c("yes" = "#0047A0",
+          "no" = "#CD2E3A",
+          "abstain" = "#FFFFFF")
+
+plot <- function(df, country) {
+  df %>%  
+    ggplot(aes(year, value, fill = vote)) +
+    geom_stream(color = "#C6C9CF", extra_span = 0.2, true_range = "none") +
+    geom_stream_label(aes(label = toupper(vote)),  family = f2, size = 3, fontface = "bold", color = "black") +
+    geom_vline(aes(xintercept = year), linetype = "dotted", color = "#C6C9CF", size = 0.4) +
+    scale_fill_manual(values = cols) +
+    labs(x = "", y = "") +
+    theme(legend.position = "none",
+          panel.background = element_rect(fill = "#F0F2F0", color = NA),
+          plot.background = element_rect(fill = "#F0F2F0", color = NA),
+          axis.text.x = element_text(family = f3, size = 9),
+          axis.text.y = element_blank(),
+          panel.grid = element_blank(),
+          plot.margin = margin(5, 5, 5, 5))
+}
+
+p1 <-  df_korea %>% 
+  filter(country == "South Korea") %>% 
+  plot() +
+  annotate("text", x = 2005, y = 0.75, label = "South Korea", family = f2, fontface = "bold", size = 5)
+
+p2 <- df_korea %>% 
+  filter(country == "North Korea") %>% 
+  plot()+
+  annotate("text", x = 2005, y = 0.75, label = "North Korea", family = f2, fontface = "bold", size = 5)
+```
+
+```{r}
+patchwork <- p1 + p2
+
+patchwork + plot_annotation(
+  title = "UN Votes",
+  subtitle = "Votes on issues: Human rights,Palestinian conflict, Arms control and disarmament,\nNuclear weapons and nuclear material, Colonialism, Economic development",
+  caption = "Source: Harvard Datavers | Graphic: Sung Inkyung",
+  theme = theme(plot.title = element_text(family = f1, size = 24, hjust = 0.5),
+                plot.subtitle = element_text(family = f2, size = 13, hjust = 0.5, lineheight = 1.1),
+                plot.caption = element_text(family = f3, size = 8))) &
+  theme(panel.background = element_rect(fill = "#F0F2F0", color = NA),
+        plot.background = element_rect(fill = "#F0F2F0", color = NA),
+        plot.margin = margin(20, 20, 20, 20))
+
+ggsave("day28_deviation.png", width = 35, height = 15, units = "cm", dpi = 300)
+```

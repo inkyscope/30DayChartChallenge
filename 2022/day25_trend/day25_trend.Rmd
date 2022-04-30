@@ -1,0 +1,213 @@
+---
+title: "Untitled"
+output: html_document
+date: '2022-04-26'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(ggtext)
+library(scales)
+library(MetBrewer)
+library(showtext)
+
+font_add_google("Anton")
+font_add_google("Fira Sans")
+font_add_google("Saira")
+
+showtext_opts(dpi = 320)
+showtext_auto()
+
+f1 = "Anton"
+f2 = "Fira Sans"
+f3 = "Saira"
+
+theme_set(theme_minimal())
+```
+
+
+```{r}
+unvotes <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-03-23/unvotes.csv')
+roll_calls <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-03-23/roll_calls.csv')
+issues <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-03-23/issues.csv')
+
+```
+
+
+```{r}
+df_full <- reduce(list(unvotes, roll_calls, issues), left_join) %>% 
+  mutate(vote_number = match(vote, c("no", "abstain", "yes")) - 2,
+         year = year(date)) %>% 
+  select(rcid, country, country_code, year, vote, vote_number, short, descr, issue)
+
+summarize_votes <- function(tbl, min_votes = 10){
+  tbl %>% 
+    summarise(n_votes = n(),
+              n_yes = sum(vote == "yes"),
+              n_no = sum(vote == "no"),
+              n_abstain = sum(vote == "abstain"),
+              pct_yes = n_yes / n_votes,
+              pct_no = n_no / n_votes,
+              pct_abstain = n_abstain / n_votes,
+              .groups = "drop") %>% 
+    filter(n_votes >= 10) %>% 
+    arrange(desc(pct_yes))
+}
+
+```
+
+```{r}
+##https://www.nato.int/cps/en/natohq/nato_countries.htm
+
+nato_table <- tribble(
+  ~country, ~year,
+  'Albania', 2009,
+  'Belgium', 1949,
+  'Bulgaria', 2004,
+  'Canada', 1949,
+  'Croatia', 2009,
+  'Czech Republic', 1999, 
+  'Denmark', 1949,
+  'Estonia', 2004,
+  'France', 1949,
+  'Germany', 1955,
+  'Greece', 1952,
+  'Hungary', 1999,
+  'Iceland', 1949,
+  'Italy', 1949,
+  'Latvia', 2004,
+  'Lithuania', 2004,
+  'Luxembourg', 1949,
+  'Montenegro', 2017,
+  'Netherlands', 1949,
+  'North Macedonia', 2020,
+  'Norway', 1949,
+  'Poland', 1999,
+  'Portugal', 1949,
+  'Romania', 2004,
+  'Slovakia', 2004,
+  'Slovenia', 2004,
+  'Spain', 1982,
+  'Turkey', 1952,
+  'United Kingdom', 1949,
+  'United States', 1949)
+
+nato_countries <- nato_table %>% 
+  arrange(year) %>% 
+  pull(country)
+
+nato_votes <- df_full %>% 
+  mutate(country = str_replace(country, "Czech Republic", "Czechoslovakia")) %>% 
+  filter(country %in% nato_countries) %>% 
+  mutate(country = fct_relevel(country, nato_countries)) %>% 
+  group_by(country, issue) %>% 
+  summarize_votes() %>% 
+  filter(issue != "na") %>% 
+  ungroup()
+```
+
+
+```{r}
+y_axis <- nato_table %>% 
+  arrange(year) %>% 
+  mutate(label = paste0(country, " (", year, ")"))
+  
+plot_nato <- nato_votes %>%  
+  ggplot(aes(pct_no, country, color = issue),) +
+  geom_point(alpha = 0.7, size = 5) +
+  geom_line(aes(group = country), color = "black", size = 1.1, show.legend = FALSE) +
+  geom_vline(xintercept = 0.5,  color = "#C8102E",  size = 0.4) +
+  scale_x_continuous(labels = percent,
+                     limits = c(0, 1),
+                     breaks = seq(0, 1, .25)) +
+  scale_y_discrete(limits = rev,
+                   label = y_axis$label) +
+  scale_color_manual(values = met.brewer("Lakota"),
+                     name = "") +
+  guides(color = guide_legend(override.aes = list(size = 4))) +
+ # facet_wrap(~issue) +
+  labs(x = "% of NO", y = "",
+       title = "NATO Members <span style = 'color:#C8102E'>**NO**</span> in UN Votes by Issues",
+       caption = "Source: Harvard Dataverse | Graphic: Sung Inkyung") +
+  theme(legend.position = c(0.69, 0.27),
+        legend.text = element_text(family = f3, size = 9),
+        plot.background = element_rect(fill = "#FFF6E5", color = NA),
+        panel.background = element_rect(fill = "#FFF6E5", color = NA),
+        plot.title = element_markdown(family = f1, size = 28, hjust = 0.5, margin = margin(b = 25)),
+        plot.caption = element_text(family = f3, size = 8, hjust = 0.97),
+        axis.text.y = element_text(family = f2, size = 10),
+        panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_line(size = 0.4),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(15, 15, 15, 15))
+
+ggsave("day25_trend1.png", width = 30, height = 22, units = "cm")
+```
+
+```{r}
+nato_strips <- nato %>% 
+  ggplot(aes(x = rc_id, xend = rc_id, y = 0, yend = 1)) +
+  geom_segment(aes(color = vote), show.legend = FALSE) +
+  geom_text(data = breaks, aes(label = year), family = f1, 
+            color = "#FFF6E5", size = 11, hjust = 0, vjust = 0) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0.001, 0)) +
+  scale_color_manual(values = c("yes" = "#33A6FF", "no" = "#C8102E", "abstain" = "#FFF6E5")) +
+  labs(x = "", y = "",
+       title = "Nato Members of <span style = 'color:#33A6FF'>**YES**</span> and <span style = 'color:#C8102E'>**NO**</span> in UN Votes",
+       caption = "**Source**: Harvard Database | **Graphic**: Sung Inkyung") +
+  theme(plot.background = element_rect(fill = "#FFF6E5", color = NA),
+        panel.background = element_rect(fill = "#FFF6E5", color = NA),
+        plot.title = element_markdown(family = f1, size = 21, hjust = 0.5, color = "black", margin = margin(b = 25)),
+        plot.caption = element_markdown(family = f3, size = 9, hjust = 0.5, color = "gray35"),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        plot.margin = margin(15, 15, 15, 15))
+
+ggsave("day25_trend2.png", width = 35, height = 10, units = "cm")
+```
+
+```{r}
+df_nato <- df_full %>% 
+  mutate(country = str_replace(country, "Czech Republic", "Czechoslovakia")) %>% 
+  filter(country %in% nato_countries) %>% 
+  mutate(country = fct_relevel(country, nato_countries)) %>% 
+  group_by(year) %>% 
+  summarize_votes() %>% 
+  select(year, pct_yes, pct_no, pct_abstain) %>% 
+  pivot_longer(-year, names_to = "vote") %>% 
+  mutate(vote = str_remove_all(vote, "pct_"))
+
+plot_bar <- df_nato %>% 
+  ggplot(aes(year, value, fill = vote)) +
+  geom_col(width = 1) +
+  scale_fill_manual(values = c("yes" = "#33A6FF", "no" = "#C8102E", "abstain" = "#FFFFFF")) +
+  scale_x_continuous(breaks = seq(1945, 2020, 10),
+                     expand = c(0.01, 0)) +
+  scale_y_continuous(labels = percent,
+                     expand = c(0.01, 0.01)) +
+  annotate("text", x = 2010, y = .33, label = "YES", family = f3, size = 11, fontface = "bold", color = "#FFFFFF") +
+  annotate("text", x = 2010, y = .73, label = "NO", family = f3, size = 11, fontface = "bold", color = "#FFFFFF") +
+  annotate("text", x = 2010, y = .9, label = "ABSTAIN", family = f3, size = 11, fontface = "bold", color = "#000000") +
+  labs(x = "", y = "",
+       title = "Nato Members in UN Votes since 1949",
+       caption = "**Source**: Harvard Database | **Graphic**: Sung Inkyung") +
+  theme_minimal() +
+  theme(legend.position = "none",
+        plot.background = element_rect(fill = "#FFF6E5", color = NA),
+        panel.background = element_rect(fill = "#FFF6E5", color = NA),
+        plot.title = element_markdown(family = f1, size = 24, hjust = 0.5, color = "#153D44"),
+        plot.caption = element_markdown(family = f3, size = 9, hjust = 0.5, color = "gray15"),
+        axis.ticks = element_blank(),
+        panel.grid = element_blank(),
+        plot.margin = margin(15, 15, 15, 15))
+
+ggsave("day25_trend3.png", width = 35, height = 20, units = "cm")
+
+```
+

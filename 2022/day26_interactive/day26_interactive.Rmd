@@ -1,0 +1,263 @@
+---
+title: "day26 interactive"
+output: html_document
+date: '2022-04-26'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+### https://github.com/dgrtwo/data-screencasts/blob/master/2021_03_23_un_votes.Rmd
+```{r}
+library(tidyverse)
+library(tidytext)
+library(ggtext)
+library(ggforce)
+library(widyr)
+library(plotly)
+library(maps)
+library(countrycode)
+library(lubridate)
+library(scales)
+library(MetBrewer)
+library(patchwork)
+library(showtext)
+
+font_add_google("Anton")
+font_add_google("Fira Sans")
+font_add_google("Saira")
+
+showtext_opts(dpi = 320)
+showtext_auto()
+
+f1 = "Anton"
+f2 = "Fira Sans"
+f3 = "Saira"
+
+theme_set(theme_minimal())
+```
+
+```{r data wrangling}
+unvotes <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-03-23/unvotes.csv')
+roll_calls <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-03-23/roll_calls.csv')
+issues <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-03-23/issues.csv')
+
+df_full <- reduce(list(unvotes, roll_calls, issues), left_join) %>% 
+  mutate(year = year(date))
+
+summarize_votes <- function(tbl, min_votes = 10){
+  tbl %>% 
+    summarise(n_votes = n(),
+              n_yes = sum(vote == "yes"),
+              pct_yes = round(n_yes / n_votes, 2),
+              .groups = "drop") %>% 
+    filter(n_votes >= min_votes) %>% 
+    arrange(desc(pct_yes))
+}
+
+df_year <- df_full %>% 
+  group_by(year) %>% 
+  summarize_votes()
+
+df_country_year <- df_full %>% 
+  bind_rows(df_full %>% mutate(country = "Overall")) %>%
+  group_by(year, country, country_code) %>% 
+  summarize_votes() %>% 
+  filter(country %in% c("United States", "Canada", "Sweden", "China", "South Korea")) %>% 
+  mutate(country = fct_reorder(country, pct_yes)) %>% 
+  ggplot(aes(year, pct_yes)) +
+  geom_line(data = df_year, size = 2) +
+  geom_line(aes(color = country)) +
+  scale_y_continuous(labels = percent) +
+  scale_color_discrete(guide = guide_legend(reverse = TRUE)) +
+  expand_limits(y = 0) +
+  labs(y = "% of yes votes in UN",
+       x = "")
+
+ggplotly(df_country_year)
+```
+
+```{r country}
+library(rnaturalearth)
+library(rnaturalearthdata)
+
+df_country <- unvotes %>% 
+  group_by(country, country_code) %>% 
+  summarize_votes()
+
+world <- ne_countries(scale = "medium", returnclass = "sf") %>% 
+  full_join(df_country, by = c("iso_a2" = "country_code"))
+
+map_yes <- world %>% 
+  ggplot() +
+  geom_sf(data = world, aes(fill = pct_yes)) +
+  scale_fill_gradientn(colors = met.brewer("Benedictus"),
+                       labels = percent)
+
+```
+
+```{r continent}
+library(countrycode)
+
+plot_map <- function(tbl, category) {
+  tbl %>% 
+    filter(!is.na({{ category }})) %>% 
+    mutate(category = fct_reorder({{ category }}, pct_yes)) %>% 
+    ggplot(aes(year, pct_yes)) +
+    geom_line(aes(color = category)) +
+    scale_y_continuous(labels = percent) +
+    scale_color_discrete(guide = guide_legend(reverse = TRUE)) +
+    expand_limits(y = 0) +
+    labs(y = "% of yes votes", x = "")
+}
+
+plot_continent <- df_full %>% 
+  group_by(continent = countrycode(country_code, "iso2c", "continent"),
+           year) %>%
+  summarize_votes()  %>% 
+  filter(!is.na(continent)) %>% 
+  mutate(continent = fct_reorder(continent, pct_yes)) %>% 
+  ggplot(aes(year, pct_yes)) +
+  geom_line(aes(color = continent)) +
+  scale_y_continuous(labels = percent) +
+  scale_color_discrete(guide = guide_legend(reverse = TRUE)) +
+  expand_limits(y = 0) +
+  labs(y = "% of yes votes", x = "")
+
+ggplotly(plot_continent)
+
+```
+
+```{r correlation by widyr packaage}
+## David Robinson - The {widyr} Package: https://youtu.be/mApnx5NJwQA
+
+countrynames <- c("Czechoslovakia", "German Democratic Republic", "Yemen Arab", "Republic", "Yemen People's Republic", "Yemen Arab Republic", "Yugoslavia", "Zanzibar")
+
+plot_cor <- function(nation = "North Korea"){
+  country_correlations <- unvotes %>% 
+  filter(!country %in% countrynames) %>% 
+  mutate(vote_number = match(vote, c("no", "abstain", "yes")) - 2) %>% 
+  left_join(roll_calls %>% select(rcid, date, amend), by = "rcid") %>% 
+  pairwise_cor(country, rcid, vote_number, sort = T) %>% 
+  mutate(continent1 = countrycode(item1, "country.name", "continent"),
+         continent2 = countrycode(item2, "country.name", "continent"))
+  
+  country_correlations %>% 
+  filter(item1 == nation) %>% 
+  slice(c(1:16, n() -0:15)) %>% 
+  mutate(country = fct_reorder(item2, correlation)) %>% 
+  ggplot(aes(correlation, country)) +
+  geom_errorbarh(height = 0, aes(xmin = correlation, xmax = 0)) +
+  geom_point() +
+  labs(y = "",
+       title = "Correlation with relevant countries")
+}
+
+plot_nk <- plot_cor()
+plot_ru <- plot_cor(nation = "Russia")
+
+
+```
+
+```{r}
+map_clusters <- df_full %>% 
+  mutate(vote_number = match(vote, c("no", "abstain", "yes")) - 2) %>% 
+  select(rcid, country, country_code, vote = vote_number) %>% 
+  widely_svd(country_code, rcid, vote, nv = 24) %>% 
+  widely_kmeans(country_code, dimension, value, k = 6) %>% 
+  inner_join(iso3166, by = c(country_code = "a2"))
+
+p1 <- map_data("world") %>% 
+  filter(region != "Antarctica") %>% 
+  left_join(map_clusters, by = c("region" = "mapname")) %>% 
+  ggplot(aes(long, lat, group = group, fill = cluster)) +
+  geom_polygon() +
+  scale_fill_manual(values = met.brewer("Archambault")) +
+  labs(title = "Country Clusters In Favor of Each Issue in the UN Vote",
+       subtitle = "Votes on issues: Human rights, Palestinian conflict, Arms control and disarmament,\nNuclear weapons and nuclear material, Colonialism, Economic development",
+       caption = "Source: Harvard Dataverse | Graphic: Sung Inkyung") +
+  ggthemes::theme_map() +
+  theme(legend.position = "none",
+        plot.background = element_rect(fill = "#5B92E5", color = NA),
+        panel.background = element_rect(fill = "#5B92E5", color = NA),
+        plot.title = element_markdown(family = f1, size = 26, hjust = 0.5),
+        plot.subtitle = element_text(family = f2, size = 13, hjust = 0.5),
+        plot.caption = element_text(family = f3, size = 9, hjust = 0.5),
+        plot.margin = margin(15, 15, 15, 15))
+
+ggsave("day26_interactive_clusters.png", width = 32, height = 18, units = "cm")
+```
+
+```{r textmining}
+rc_words <- roll_calls %>% 
+  filter(!is.na(short)) %>% 
+  unnest_tokens(word, short) %>% 
+  anti_join(stop_words) %>% 
+  distinct(rcid, word) %>%
+  add_count(word, name = "count") %>% 
+  filter(count > 50)
+
+p2 <- unvotes %>% 
+  inner_join(rc_words, by = "rcid") %>% 
+  filter(country %in% c("Canada", "Australia")) %>% 
+  group_by(word, country) %>% 
+  summarize_votes(min_votes = 50) %>% 
+  mutate(word = fct_reorder(word, pct_yes)) %>% 
+  ggplot(aes(pct_yes, word)) +
+  geom_point(aes(size = n_votes, color = country)) +
+  scale_color_manual(values = c("#00843D", "#E82042"), guide = "none") +
+  scale_size(range = c(1, 7), name = "number of votes") +
+  scale_x_continuous(labels = percent) +
+  labs(x = "Percentage of yes votes", y = "",
+       title = "<span style = 'color:#E82042'>**Canada**</span> and <span style='color:#00843D'>**Australia**</span>",
+       subtitle = "Two countries are selected through clustering among the countries that voted for in the UN vote.\nWords are extracted related to the approved issues",
+       caption = "Source: Harvard Dataverse | Graphic: Sung Inkyung") +
+  theme(legend.position = "bottom",
+        legend.text = element_text(family = f3, size = 9),
+        plot.background = element_rect(fill = "#5B92E5", color = NA),
+        panel.background = element_rect(fill = "#5B92E5", color = NA),
+        plot.title = element_markdown(family = f1, size = 28, hjust = 0.5),
+        plot.subtitle = element_text(family = f2, size = 13, hjust = 0.5),
+        plot.caption = element_text(family = f3, size = 8, hjust = 0.95),
+        axis.text.x = element_text(family = f2, size = 10, color = "white"),
+        axis.text.y = element_text(family = f2, size = 10, color = "white"),
+        axis.title.x = element_text(family = f2, size = 11, color = "white"),
+        panel.grid.major = element_line(size = 0.1, color = "gray80"),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(20, 20, 20, 20))
+
+ggsave("day26_interactive_country.png", width = 35, height = 25, units = "cm")
+```
+
+```{r}
+p3 <- unvotes %>% 
+  inner_join(rc_words, by = "rcid") %>% 
+  filter(country %in% c("Canada", "Australia")) %>% 
+  group_by(word, country) %>% 
+  summarize_votes(min_votes = 50) %>% 
+  mutate(word = fct_reorder(word, pct_yes)) %>% 
+  ggplot(aes(pct_yes, word)) +
+  geom_point(aes(size = n_votes, color = country)) +
+  scale_color_manual(values = c("#00843D", "#E82042"), name = "") +
+  scale_x_continuous(labels = percent) +
+  labs(x = "Percentage of yes votes", y = "",
+       title = "Words related to issues favored by Canad and Australia in the UN vote",
+       caption = "Source: Harvard Dataverse | Graphic: Sung Inkyung") +
+  theme(legend.position = "none",
+        legend.text = element_text(family = f3, size = 9),
+        plot.background = element_rect(fill = "#5B92E5", color = NA),
+        panel.background = element_rect(fill = "#5B92E5", color = NA),
+        plot.title = element_text(family = f1, size = 28, face = "bold", hjust = 0.5, margin = margin(b = 15)),
+        plot.caption = element_text(family = f3, size = 8, hjust = 0.95),
+        axis.text.x = element_text(family = f2, size = 10, color = "white"),
+        axis.text.y = element_text(family = f2, size = 10, color = "white"),
+        axis.title.x = element_text(family = f2, size = 11, color = "white"),
+        panel.grid.major.x = element_line(size = 0.05, color = "gray80"),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(20, 20, 20, 20))
+
+p <- ggplotly(p3)
+htmlwidgets::saveWidget(p, file = "day26_interactive.html")
+```
+

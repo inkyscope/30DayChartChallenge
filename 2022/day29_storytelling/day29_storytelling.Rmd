@@ -1,0 +1,136 @@
+---
+title: "Uday29 Storytelling"
+output: html_document
+date: '2022-04-28'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(tidytext)
+library(ggtext)
+library(lubridate)
+library(scales)
+library(MetBrewer)
+library(patchwork)
+library(showtext)
+
+font_add_google("Anton")
+font_add_google("Fira Sans")
+font_add_google("Saira")
+showtext_opts(dpi = 320)
+showtext_auto()
+
+f1 = "Anton"
+f2 = "Fira Sans"
+f3 = "Saira"
+
+theme_set(theme_minimal())
+```
+
+```{r}
+unvotes <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-03-23/unvotes.csv')
+roll_calls <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-03-23/roll_calls.csv')
+```
+
+```{r}
+## https://github.com/jkaupp/tidytuesdays/blob/master/2021/week11/R/analysis.R
+
+df <- function(nation = "South Korea"){
+  df_country <- unvotes %>% 
+  filter(country == nation) %>% 
+  left_join(roll_calls) %>% 
+  mutate(year = year(date)) %>% 
+  select(rcid, country, year, vote, short)
+  
+ rc_words <- df_country %>% 
+  filter(!is.na(short)) %>% 
+  unnest_tokens(word, short) %>% 
+  anti_join(stop_words) %>% 
+  distinct(rcid, word, vote) %>% 
+  count(word, vote, sort = T) 
+
+overall_votes <- rc_words %>% 
+  group_by(word) %>% 
+  summarise(total = sum(n)) %>% 
+  arrange(-total)
+  
+words_prc <- rc_words %>% 
+  left_join(overall_votes) %>% 
+  mutate(prc = n/total) %>% 
+  filter(total > 20) %>% 
+  ungroup() %>% 
+  complete(nesting(word, total), vote, fill = list(n = 0, prc = 0))
+
+order <- words_prc %>% 
+  filter(vote == "yes") %>% 
+  arrange(prc) %>% 
+  pull(word)
+
+plot_data <- words_prc %>% 
+  mutate(word = factor(word, order)) %>% 
+  filter(!(vote == "yes" & n == 0),
+         vote !="abstain")
+
+labels <- words_prc %>% 
+  mutate(word = factor(word, order)) %>% 
+  group_by(word) %>% 
+  slice_max(prc, with_ties = FALSE) %>% 
+  filter(vote != "abstain") %>% 
+  mutate(label_x = if_else(vote == "no", 0.995, 0.005))
+
+plot <- ggplot(plot_data,
+               aes(x = prc, y = word, fill = vote, color = vote)) +
+  geom_col(position = "fill", show.legend = FALSE) +
+  geom_text(data = labels, aes(x = label_x, y = word, label = word), 
+            hjust = "inward", color = "white", family = f2, size = 4) +
+  geom_vline(xintercept = 0.5, linetype = "dashed", color = "gray65") +
+  scale_fill_manual(values = c("#CD2E3A", "#0047A0")) +
+  scale_color_manual(values = c("#CD2E3A", "#0047A0")) +
+  scale_x_continuous(labels = percent) +
+  labs(x = "", y = "") +
+  theme(panel.background = element_rect(fill = "#F0F2F0", color = NA),
+        plot.background = element_rect(fill = "#F0F2F0", color = NA),
+        axis.text.y = element_blank(),
+        axis.text.x = element_text(family = f2, size = 15),
+        panel.grid = element_blank(),
+        plot.margin = margin(20, 20, 20, 20))
+}
+
+p1 <- df() +
+  annotate("text", x = -0.03, y = 67, label = "South Korea", family = f2, fontface = "bold", size = 5, angle = 90)
+
+p2 <- df(nation = "North Korea") +
+  annotate("text", x = -0.03, y = 57, label = "North Korea", family = f2, fontface = "bold", size = 5, angle = 90)
+
+p3 <- df(nation = "United States") +
+  annotate("text", x = -0.04, y = 152, label = "United States", family = f2, fontface = "bold", size = 11, angle = 90)
+
+p4 <- df(nation = "Russia") +
+  annotate("text", x = -0.04, y = 159, label = "Russia", family = f2, fontface = "bold", size = 11, angle = 90)
+
+p5 <- df(nation = "United Kingdom") +
+  annotate("text", x = -0.03, y = 130, label = "United Kingdom", family = f2, fontface = "bold", size = 5, angle = 90)
+```
+
+
+```{r}
+patchwork <- p3 + p4 
+
+p <- patchwork + plot_annotation(
+  title = "Percentage of Words <span style = 'color:#0047A0'>**FOR**</span> and <span style = 'color:#CD2E3A'>**AGAINST**</span> UN Votes",
+  subtitle = "Votes on issues: Human rights,Palestinian conflict, Arms control and disarmament,\nNuclear weapons and nuclear material, Colonialism, Economic development",
+  caption = "Source: Harvard Datavers | Graphic: Sung Inkyung",
+  theme = theme(plot.title = element_markdown(family = f1, size = 38, hjust = 0.5),
+                plot.subtitle = element_text(family = f2, size = 22, hjust = 0.5, lineheight = 1.1),
+                plot.caption = element_text(family = f3, size = 15, hjust = 0.97))) &
+  theme(panel.background = element_rect(fill = "#F0F2F0", color = NA),
+        plot.background = element_rect(fill = "#F0F2F0", color = NA),
+        plot.margin = margin(20, 20, 20, 20))
+
+ggsave("day29_storytelling.png", width = 38, height = 55, units = "cm")
+
+```

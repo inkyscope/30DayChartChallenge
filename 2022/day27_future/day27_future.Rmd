@@ -1,0 +1,141 @@
+---
+title: "day27 future"
+output: html_document
+date: '2022-04-28'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(tidytext)
+library(ggtext)
+library(ggforce)
+library(ggthemes)
+library(rnaturalearth)
+library(lubridate)
+library(scales)
+library(patchwork)
+library(showtext)
+
+font_add_google("Anton")
+font_add_google("Fira Sans")
+font_add_google("Saira")
+
+showtext_opts(dpi = 320)
+showtext_auto()
+
+f1 = "Anton"
+f2 = "Fira Sans"
+f3 = "Saira"
+
+theme_set(theme_minimal())
+```
+
+```{r}
+unvotes <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-03-23/unvotes.csv')
+roll_calls <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-03-23/roll_calls.csv')
+
+summarize_votes <- function(tbl, min_votes = 10){
+  tbl %>% 
+    summarise(n_votes = n(),
+              n_yes = sum(vote == "yes"),
+              n_no = sum(vote == "no"),
+              pct_yes = n_yes / n_votes,
+              pct_no = n_no / n_votes,
+              .groups = "drop") %>% 
+    filter(n_votes >= 10) %>% 
+    arrange(desc(pct_yes))
+}
+
+rc_sustainable <- roll_calls %>% 
+  mutate(year = year(date)) %>% 
+  filter(short != "na") %>% 
+  unnest_tokens(word, short) %>% 
+  anti_join(stop_words) %>% 
+  distinct(rcid, year, word) %>% 
+  filter(word == "sustainable")
+```
+
+```{r}
+df <- left_join(rc_sustainable %>% select(rcid, year), unvotes, by = "rcid")
+
+df_year <- df %>% 
+  group_by(year) %>% 
+  summarize_votes()
+
+df_line <- df_year %>% 
+  select(year, yes = pct_yes, no = pct_no) %>% 
+  pivot_longer(-year, names_to = "vote") 
+
+df_ribbon <- df_year %>% 
+  select(year, yes = pct_yes, no = pct_no)
+
+df_points <- df_line %>% 
+  filter(year %in% range(year))
+
+df_labels <- df_points %>% 
+  group_by(year) %>% 
+  summarise(diff = max(value) - min(value),
+            value = mean(value))
+
+pals <- c("indianred", "#5B92E5")
+
+plot <- ggplot() +
+  geom_ribbon(data = df_ribbon, 
+              aes(x = year, ymin = no, ymax = yes), fill = "#5B92E5", alpha = 0.3) +
+  geom_line(data = df_line, aes(x = year, y = value, color = vote), size = 2, show.legend = FALSE) +
+  geom_point(data = df_points, aes(x = year, y = value, color = vote)) +
+  geom_text(data = df_labels, aes(x = year, y = value,
+                                  label = scales::percent(diff)),
+            family = f1, nudge_x = c(-2, 2), size = 9) +
+  annotate(GeomRichtext, x = 2013, y = 0.62, 
+           label = "<span style = 'color:#5B92E5'>**FOR**</span> and <span style = 'color:indianred'>**AGAINST**</span><br>**SUSTAINABLE** Issues in the UN Votes", hjust = 0.5, vjust = 1, size = 11, family = f1, label.color = NA, fill = NA) +
+  labs(x = "", y = "",
+       subtitle = "**Vote on SUSTAINABILITY**<br><br>**2007** Environment, Sustainable Development<br>**2008-2012** Sustainable Development<br>**2013-2015** *NO VOTES* <br>**2016, 2018** Entrepreneurship for sustainable development<br>**2017** Ensuring access to affordable, reliable, sustainable and modern energy for all<br>**2017, 2019** Agricultural technology for sustainable development<br>**2017** Culture and sustainable development",
+       caption = "Source: Harvard Dataverse | Graphic: Sung Inkyung") +
+  scale_x_continuous(limits = c(2004, 2022),
+                     breaks = seq(2007, 2019, 3)) +
+  scale_y_continuous(labels = percent, limits = c(0, 1)) +
+  scale_color_manual(values = pals) +
+  theme(legend.position = "none",
+        plot.background = element_rect(fill = "white", color = NA),
+        plot.subtitle = element_markdown(family = f2, size = 11, lineheight = 1.1,  margin = margin(b = 15)),
+        plot.caption = element_text(family = f3, size = 9, hjust = 0.5, margin = margin(t = 20)),
+        axis.text = element_text(family = f3, size = 10),
+        plot.margin = margin(10, 10, 10, 10))
+
+ggsave("day27_future.png", width = 30, height = 20, units = "cm")
+  
+```
+
+```{r}
+world_data <- map_data("world") %>% 
+  as_tibble() %>% 
+  left_join(maps::iso3166 %>% 
+              select(mapname, country_code = a2),
+            c(region = "mapname")) %>% 
+  filter(region != "Antarctica")
+
+df_country <- df %>% 
+  group_by(country, country_code) %>% 
+  summarize_votes()
+
+world_data %>% 
+  left_join(df_country, by = "country_code") %>% 
+  ggplot(aes(long, lat, group = group, fill = pct_yes)) +
+  geom_polygon() +
+  scale_fill_gradientn(colors = met.brewer("Benedictus")) +
+  labs(x = "Percentage of yes votes in UN",
+       title = "SUSTAINABILITY FUTURE")
+  theme_map()
+```
+
+```{r}
+df_sus <- roll_calls %>% 
+  mutate(year = year(date)) %>% 
+  filter(str_detect(short, c("SUSTAIN", "sustainable"))) 
+```
+

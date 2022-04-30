@@ -1,0 +1,101 @@
+---
+title: "day22 animation"
+output: html_document
+date: '2022-04-25'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(ggtext)
+library(scales)
+library(gganimate)
+library(showtext)
+
+font_add_google("Bebas Neue")
+font_add_google("Saira")
+
+showtext_opts(dpi = 320)
+showtext_auto()
+
+f1 = "Bebas Neue"
+f2 = "Saira"
+## fontface is not working...
+```
+
+```{r}
+artwork <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-01-12/artwork.csv')
+artists <- readr::read_csv("https://github.com/tategallery/collection/raw/master/artist_data.csv")
+```
+
+```{r}
+artwork_artist <- artwork %>% 
+  left_join(artists,by = c("artistId" = "id")) %>% 
+  filter(!is.na(gender), 
+         gender != "Other",
+         !is.na(year)) %>% 
+  mutate(gender = case_when(str_detect(artist, "British") ~ "Other",
+                            str_detect(artist, "Art & Language") ~ "Male",
+                            TRUE ~ gender),
+         artist = case_when(str_detect(artist, "British") ~ "British School",
+                            TRUE ~ artist)) %>% 
+  mutate(age_at_creation = year - yearOfBirth) %>% 
+  filter(age_at_creation > 0)
+```
+
+```{r}
+df_plot <- artwork_artist %>% 
+  select(artist, year, gender, age = age_at_creation) %>% 
+  group_by(year, gender) %>% 
+  mutate(n = sum(n())) %>% 
+  ungroup()
+
+df_plot %>% 
+  #filter(gender == "Female") %>% 
+  #count(year, gender, sort = T) %>% 
+  #arrange(-year) %>% 
+  ggplot(aes(x = year, y = age, color = gender)) +
+  geom_point()
+```
+
+```{r}
+cols <- c("Male" = "#07444A", "Female" = "#FF8E97")
+
+plot <- df_plot %>%  
+  ggplot(aes(x = n, y = age, color = gender, group = gender)) +
+  geom_point(alpha = 0.3, show.legend = F) +
+  scale_color_manual(values = cols) +
+  scale_y_continuous(labels = function(br) abs(br)) +
+  scale_x_log10() +
+  #facet_wrap(~gender, scales = "free") +
+  labs(title = "Artists by <span style = 'color:#FF8E97'>**WOMEN**</span> and <span style = 'color:#07444A'>**MEN**</span> in Tate Art Museum Collection",
+    subtitle = "Year {as.integer(frame_time)}",
+    caption = "Source: Tate Collection | Graphic: Sung Inkyung",
+    x = "Number of acquisition (log10)", y = "Age at creation", color = "") +
+  theme_minimal() +
+  theme( legend.position = "none",
+        #strip.background = element_rect(fill = "#234E7D", color = NA),
+        #strip.text = element_text(size = 13, face = "bold", color = "#FBF8BE"),
+        plot.background = element_rect(fill = "#FBF8BE", color = NA), 
+        panel.background = element_rect(fill = "#FBF8BE", color = NA), 
+        plot.title = element_markdown(size = 13, face = "bold", color = "gray10"),
+        plot.subtitle = element_text(size = 12, face = "bold", color = "gray10"),
+        plot.caption = element_text(size = 7, hjust = 0.95, color = "gray45", margin = margin(t = 15)),
+        panel.grid = element_blank(), 
+        axis.title = element_text(size = 8),
+        plot.margin = margin(10,  10, 10, 10)) 
+  
+anim_gif <- plot + 
+  transition_time(year) +
+  ease_aes("linear") +
+  enter_fade() +
+  exit_fade() +
+  shadow_mark()
+
+animate(anim_gif, duration = 10, fps = 20, start_pause = 5, end_pause = 10, width = 15, height= 11, units = "cm", res = 150)
+anim_save("day22_animation.gif")
+```
+
